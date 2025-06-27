@@ -2,18 +2,33 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
     <title>Dashboard - TeamPulse</title>
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <!-- Mobile Menu Toggle -->
+    <button class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <div class="dashboard-container">
         <!-- Sidebar Navigation -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h2>TeamPulse</h2>
+                <button class="sidebar-close" id="sidebarClose">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <nav>
                 <ul>
@@ -26,134 +41,138 @@
             </nav>
         </aside>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <div class="section-header">
-                <h2>Team Mood Overview</h2>
-                <p>Track and analyze your team's emotional well-being</p>
-            </div>
-
-            <!-- Quick Stats -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <h4>Team Average Mood</h4>
-                    <div class="stat-value" id="avgMood">75%</div>
-                    <div class="meter">
-                        <div class="meter-fill" style="width: 75%;"></div>
-                    </div>
-                    <div class="stat-trend positive">↑ 5%</div>
+        <!-- Main Content Area -->
+        <div class="content-area">
+            <!-- Main Content -->
+            <main class="main-content">
+                <div class="section-header">
+                    <h2>Team Mood Overview</h2>
+                    <p>Track and analyze your team's emotional well-being</p>
                 </div>
 
-                <div class="stat-card">
-                    <h4>Stress Level</h4>
-                    <div class="stat-value" id="stressLevel">Low</div>
-                    <div class="meter">
-                        <div class="meter-fill" style="width: 30%;"></div>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <h4>Team Engagement</h4>
-                    <div class="stat-value" id="engagement">High</div>
-                    <div class="meter">
-                        <div class="meter-fill" style="width: 85%;"></div>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <h4>Recent Responses</h4>
-                    <div class="stat-value" id="responses">24</div>
-                    <div class="stat-trend positive">↑ 12 today</div>
-                </div>
-            </div>
-
-            <!-- Mood Chart -->
-            <div class="chart-container">
-                <div class="chart-controls">
-                    <button class="btn active" data-period="day">Today</button>
-                    <button class="btn" data-period="week">Week</button>
-                    <button class="btn" data-period="month">Month</button>
-                    <select id="chartType">
-                        <option value="line">Line Chart</option>
-                        <option value="bar">Bar Chart</option>
-                        <option value="radar">Radar Chart</option>
-                    </select>
-                </div>
-                <canvas id="moodChart"></canvas>
-            </div>
-
-            <!-- Team Insights -->
-            <div class="insights-container">
-                <h3>Team Insights</h3>
-                <div class="insights-grid">
-                    <div class="insight-card">
-                        <div class="insight-header">
-                            <i class="fas fa-lightbulb"></i>
-                            <h4>Peak Performance Times</h4>
+                <!-- Quick Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>Team Average Mood</h4>
+                        <div class="stat-value" id="avgMood">75%</div>
+                        <div class="meter">
+                            <div class="meter-fill" style="width: 75%;"></div>
                         </div>
-                        <p>Team shows highest engagement between 9 AM - 11 AM</p>
+                        <div class="stat-trend positive">↑ 5%</div>
                     </div>
 
-                    <div class="insight-card">
-                        <div class="insight-header">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <h4>Stress Patterns</h4>
+                    <div class="stat-card">
+                        <h4>Stress Level</h4>
+                        <div class="stat-value" id="stressLevel">Low</div>
+                        <div class="meter">
+                            <div class="meter-fill" style="width: 30%;"></div>
                         </div>
-                        <p>Increased stress levels noticed during project deadlines</p>
                     </div>
 
-                    <div class="insight-card">
-                        <div class="insight-header">
-                            <i class="fas fa-users"></i>
-                            <h4>Team Dynamics</h4>
+                    <div class="stat-card">
+                        <h4>Team Engagement</h4>
+                        <div class="stat-value" id="engagement">High</div>
+                        <div class="meter">
+                            <div class="meter-fill" style="width: 85%;"></div>
                         </div>
-                        <p>Positive collaboration trends in cross-functional teams</p>
+                    </div>
+
+                    <div class="stat-card">
+                        <h4>Recent Responses</h4>
+                        <div class="stat-value" id="responses">24</div>
+                        <div class="stat-trend positive">↑ 12 today</div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Recent Activity -->
-            <div class="activity-container">
-                <h3>Recent Activity</h3>
-                <div class="activity-list" id="activityList">
-                    <!-- Activity items will be dynamically added here -->
+                <!-- Mood Chart -->
+                <div class="chart-container">
+                    <div class="chart-controls">
+                        <button class="btn active" data-period="day">Today</button>
+                        <button class="btn" data-period="week">Week</button>
+                        <button class="btn" data-period="month">Month</button>
+                        <select id="chartType">
+                            <option value="bar">Bar Chart</option>
+                            <option value="line">Line Chart</option>
+                            <option value="radar">Radar Chart</option>
+                        </select>
+                    </div>
+                    <canvas id="moodChart"></canvas>
                 </div>
-            </div>
-        </main>
 
-        <!-- Quick Actions Panel -->
-        <aside class="quick-actions">
-            <div class="quick-actions-header">
-                <h3>Quick Actions</h3>
-            </div>
-            <div class="quick-actions-content">
-                <button class="action-btn" onclick="window.location.href='emotion-input.html'">
-                    <i class="fas fa-plus"></i>
-                    Record Emotion
-                </button>
-                <button class="action-btn" onclick="window.location.href='feedback.html'">
-                    <i class="fas fa-comment"></i>
-                    Give Feedback
-                </button>
-                <button class="action-btn" id="generateReport">
-                    <i class="fas fa-file-alt"></i>
-                    Generate Report
-                </button>
-            </div>
+                <!-- Team Insights -->
+                <div class="insights-container">
+                    <h3>Team Insights</h3>
+                    <div class="insights-grid">
+                        <div class="insight-card">
+                            <div class="insight-header">
+                                <i class="fas fa-lightbulb"></i>
+                                <h4>Peak Performance Times</h4>
+                            </div>
+                            <p>Team shows highest engagement between 9 AM - 11 AM</p>
+                        </div>
 
-            <!-- Alerts Section -->
-            <div class="alerts-section">
-                <h3>Recent Alerts</h3>
-                <div class="alerts-list" id="alertsList">
-                    <!-- Alerts will be dynamically added here -->
+                        <div class="insight-card">
+                            <div class="insight-header">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <h4>Stress Patterns</h4>
+                            </div>
+                            <p>Increased stress levels noticed during project deadlines</p>
+                        </div>
+
+                        <div class="insight-card">
+                            <div class="insight-header">
+                                <i class="fas fa-users"></i>
+                                <h4>Team Dynamics</h4>
+                            </div>
+                            <p>Positive collaboration trends in cross-functional teams</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </aside>
+
+                <!-- Recent Activity -->
+                <div class="activity-container">
+                    <h3>Recent Activity</h3>
+                    <div class="activity-list" id="activityList">
+                        <!-- Activity items will be dynamically added here -->
+                    </div>
+                </div>
+            </main>
+
+            <!-- Quick Actions Panel -->
+            <aside class="quick-actions">
+                <div class="quick-actions-header">
+                    <h3>Quick Actions</h3>
+                </div>
+                <div class="quick-actions-content">
+                    <button class="action-btn" onclick="window.location.href='emotion-input.html'">
+                        <i class="fas fa-plus"></i>
+                        Record Emotion
+                    </button>
+                    <button class="action-btn" onclick="window.location.href='feedback.html'">
+                        <i class="fas fa-comment"></i>
+                        Give Feedback
+                    </button>
+                    <button class="action-btn" id="generateReport">
+                        <i class="fas fa-file-alt"></i>
+                        Generate Report
+                    </button>
+                </div>
+
+                <!-- Alerts Section -->
+                <div class="alerts-section">
+                    <h3>Recent Alerts</h3>
+                    <div class="alerts-list" id="alertsList">
+                        <!-- Alerts will be dynamically added here -->
+                    </div>
+                </div>
+            </aside>
+        </div>
     </div>
 
     <!-- Scripts -->
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/dataStorage.js"></script>
     <script src="js/dashboard.js"></script>
     <script>
         // Initialize the dashboard when the DOM is fully loaded
@@ -166,6 +185,13 @@
             
             // Initialize the dashboard
             window.dashboard = new Dashboard();
+        });
+        
+        // Cleanup when page is unloaded
+        window.addEventListener('beforeunload', () => {
+            if (window.dashboard) {
+                window.dashboard.cleanup();
+            }
         });
     </script>
 </body>

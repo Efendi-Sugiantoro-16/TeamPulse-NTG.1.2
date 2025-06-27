@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart Test - TeamPulse</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f6fa;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .chart-controls {
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 8px 16px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f8f9fa;
+            cursor: pointer;
+        }
+        .btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        #chartType {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #testChart {
+            width: 100%;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Chart Test</h1>
+        <p>Testing chart functionality with sample data</p>
+        
+        <div class="chart-controls">
+            <button class="btn active" onclick="changePeriod('day')">Day</button>
+            <button class="btn" onclick="changePeriod('week')">Week</button>
+            <button class="btn" onclick="changePeriod('month')">Month</button>
+            <select id="chartType" onchange="changeChartType()">
+                <option value="bar">Bar Chart</option>
+                <option value="line">Line Chart</option>
+                <option value="radar">Radar Chart</option>
+            </select>
+        </div>
+        
+        <canvas id="testChart"></canvas>
+    </div>
+
+    <script>
+        let chart = null;
+        let currentPeriod = 'day';
+        
+        // Sample data
+        const sampleData = {
+            day: [
+                { timestamp: '2024-01-01 09:00', happy: 0.8, sad: 0.1, angry: 0.05, neutral: 0.05 },
+                { timestamp: '2024-01-01 12:00', happy: 0.6, sad: 0.2, angry: 0.1, neutral: 0.1 },
+                { timestamp: '2024-01-01 15:00', happy: 0.7, sad: 0.15, angry: 0.05, neutral: 0.1 },
+                { timestamp: '2024-01-01 18:00', happy: 0.5, sad: 0.3, angry: 0.1, neutral: 0.1 }
+            ],
+            week: [
+                { timestamp: '2024-01-01', happy: 0.75, sad: 0.15, angry: 0.05, neutral: 0.05 },
+                { timestamp: '2024-01-02', happy: 0.8, sad: 0.1, angry: 0.05, neutral: 0.05 },
+                { timestamp: '2024-01-03', happy: 0.6, sad: 0.25, angry: 0.1, neutral: 0.05 },
+                { timestamp: '2024-01-04', happy: 0.7, sad: 0.2, angry: 0.05, neutral: 0.05 },
+                { timestamp: '2024-01-05', happy: 0.85, sad: 0.1, angry: 0.02, neutral: 0.03 },
+                { timestamp: '2024-01-06', happy: 0.9, sad: 0.05, angry: 0.02, neutral: 0.03 },
+                { timestamp: '2024-01-07', happy: 0.7, sad: 0.2, angry: 0.05, neutral: 0.05 }
+            ],
+            month: [
+                { timestamp: 'Week 1', happy: 0.75, sad: 0.15, angry: 0.05, neutral: 0.05 },
+                { timestamp: 'Week 2', happy: 0.8, sad: 0.1, angry: 0.05, neutral: 0.05 },
+                { timestamp: 'Week 3', happy: 0.7, sad: 0.2, angry: 0.05, neutral: 0.05 },
+                { timestamp: 'Week 4', happy: 0.85, sad: 0.1, angry: 0.02, neutral: 0.03 }
+            ]
+        };
+        
+        function processData(data) {
+            return data.map(entry => {
+                const positiveScore = (entry.happy || 0) + (entry.surprised || 0);
+                const negativeScore = (entry.sad || 0) + (entry.angry || 0) + (entry.fearful || 0) + (entry.disgusted || 0);
+                const neutralScore = entry.neutral || 0;
+                
+                const moodLevel = Math.max(0, Math.min(100, 
+                    (positiveScore * 100) - (negativeScore * 50) + (neutralScore * 50)
+                ));
+                
+                const stressLevel = Math.max(0, Math.min(100, negativeScore * 100));
+                
+                return {
+                    timestamp: entry.timestamp,
+                    mood_level: moodLevel,
+                    stress_level: stressLevel
+                };
+            });
+        }
+        
+        function createChart() {
+            const ctx = document.getElementById('testChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+            
+            const data = sampleData[currentPeriod];
+            const processedData = processData(data);
+            
+            const labels = processedData.map(entry => entry.timestamp);
+            const moodData = processedData.map(entry => entry.mood_level);
+            const stressData = processedData.map(entry => entry.stress_level);
+            
+            const chartType = document.getElementById('chartType').value;
+            
+            const datasets = [
+                {
+                    label: 'Mood Level',
+                    data: moodData,
+                    backgroundColor: 'rgba(76, 175, 80, 0.8)',
+                    borderColor: '#4CAF50',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Stress Level',
+                    data: stressData,
+                    backgroundColor: 'rgba(244, 67, 54, 0.8)',
+                    borderColor: '#F44336',
+                    borderWidth: 1
+                }
+            ];
+            
+            if (chartType === 'line') {
+                datasets[0].tension = 0.3;
+                datasets[0].fill = true;
+                datasets[0].backgroundColor = 'rgba(76, 175, 80, 0.1)';
+                datasets[1].tension = 0.3;
+                datasets[1].fill = true;
+                datasets[1].backgroundColor = 'rgba(244, 67, 54, 0.1)';
+            }
+            
+            chart = new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}%`;
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Team Mood & Stress Levels Over Time'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Level (%)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Time Period'
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+        
+        function changePeriod(period) {
+            currentPeriod = period;
+            
+            // Update button states
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            createChart();
+        }
+        
+        function changeChartType() {
+            createChart();
+        }
+        
+        // Initialize chart when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            createChart();
+        });
+    </script>
+</body>
+</html> 

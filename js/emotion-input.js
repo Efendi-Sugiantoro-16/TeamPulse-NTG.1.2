@@ -638,8 +638,17 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
             
             // Show the results section if it's hidden
             this.showResultsSection();
-            // Simpan hasil emosi terakhir
-            this.lastEmotions = expressions;
+            
+            // Simpan hasil emosi terakhir dengan format yang konsisten
+            this.lastEmotions = {
+                happy: expressions.happy || 0,
+                sad: expressions.sad || 0,
+                angry: expressions.angry || 0,
+                neutral: expressions.neutral || 0,
+                surprised: expressions.surprised || 0,
+                fearful: expressions.fearful || 0,
+                disgusted: expressions.disgusted || 0
+            };
         }
 
         // Draw face detections and expressions on canvas

@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
     <title>History</title>
     <link rel="stylesheet" href="css/history.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -11,11 +15,22 @@
     <script src="js/dataStorage.js"></script>
 </head>
 <body>
+    <!-- Mobile Menu Toggle -->
+    <button class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <div class="dashboard-container">
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <h2>TeamPulse</h2>
+            <button class="sidebar-close" id="sidebarClose">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
         <nav>
             <ul>
@@ -245,6 +260,53 @@
 
     // Initial UI update
     updateUI(historyManager.getHistoryStats());
+</script>
+
+<script>
+    // Mobile menu functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const sidebarClose = document.getElementById('sidebarClose');
+
+        function openMobileMenu() {
+            sidebar.classList.add('active');
+            sidebarOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeMobileMenu() {
+            sidebar.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        if (menuToggle) {
+            menuToggle.addEventListener('click', openMobileMenu);
+        }
+
+        if (sidebarClose) {
+            sidebarClose.addEventListener('click', closeMobileMenu);
+        }
+
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', closeMobileMenu);
+        }
+
+        // Close menu when clicking on navigation links
+        const navLinks = sidebar.querySelectorAll('nav a');
+        navLinks.forEach(link => {
+            link.addEventListener('click', closeMobileMenu);
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 991) {
+                closeMobileMenu();
+            }
+        });
+    });
 </script>
 </body>
 </html>
