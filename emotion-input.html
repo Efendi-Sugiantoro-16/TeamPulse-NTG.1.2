@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Input - TeamPulse</title>
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Load TensorFlow.js and face-api.js with versions known to work well together -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.7.4/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>TeamPulse</h2>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="dashboard.html"><i class="fas fa-chart-line"></i>Dashboard</a></li>
+                    <li><a href="emotion-input.html" class="active"><i class="fas fa-face-smile"></i>Emotion Input</a></li>
+                    <li><a href="history.html"><i class="fas fa-history"></i>History</a></li>
+                    <li><a href="feedback.html"><i class="fas fa-comments"></i>Feedback</a></li>
+                    <li><a href="settings.html"><i class="fas fa-gear"></i>Settings</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="section-header">
+                <h2>Emotion Input</h2>
+                <p>Express your emotions through video, audio, or text</p>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="input-tabs">
+                <button class="tab-btn active" data-tab="gambarTab"><i class="fas fa-camera"></i> Gambar</button>
+                <button class="tab-btn" data-tab="audioTab"><i class="fas fa-microphone"></i> Audio</button>
+                <button class="tab-btn" data-tab="textTab"><i class="fas fa-keyboard"></i> Text</button>
+            </div>
+
+            <div class="input-methods">
+                <!-- Gambar Input (dulu Video Input) -->
+                <div class="input-card tab-content" id="gambarTab" style="display: block;">
+                    <div class="input-header">
+                        <i class="fas fa-camera"></i>
+                        <h3>Gambar Input</h3>
+                    </div>
+                    <div class="gambar-container">
+                        <div class="media-wrapper">
+                            <video id="videoFeed" width="320" height="240" autoplay muted playsinline style="border-radius: 10px; border: 1px solid #d1d9e6;"></video>
+                            <canvas id="videoOverlay" width="320" height="240" style="position: absolute; left: 0; top: 0;"></canvas>
+                        </div>
+                        <div class="controls" style="margin-top: 12px; display: flex; gap: 10px;">
+                            <button id="startVideo" class="btn"><i class="fas fa-play"></i> Mulai Kamera</button>
+                            <button id="stopVideo" class="btn" disabled><i class="fas fa-stop"></i> Stop</button>
+                            <button id="takeSnapshot" class="btn" disabled><i class="fas fa-camera"></i> Ambil Gambar</button>
+                        </div>
+                        <div id="videoStatus" class="status" style="margin-top: 8px; margin-bottom: 8px;">Loading face detection models...</div>
+                        <div id="snapshotContainer" class="snapshot-container" style="display: none; margin-top: 16px;">
+                            <div class="snapshot-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h4 style="margin: 0;">Gambar Terbaru</h4>
+                                <div class="snapshot-actions">
+                                    <button id="downloadSnapshot" class="btn btn-sm" title="Download Gambar" style="margin-right: 5px;">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                    <button id="deleteSnapshot" class="btn btn-sm btn-danger" title="Hapus Gambar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="snapshot-wrapper" style="position: relative; display: inline-block;">
+                                <canvas id="snapshotCanvas" width="320" height="240" style="border-radius: 10px; border: 1px solid #d1d9e6; max-width: 100%;"></canvas>
+                                <div id="snapshotEmotion" class="snapshot-emotion" style="position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px 10px; border-radius: 15px; font-size: 12px;">
+                                    <i class="fas fa-smile"></i> <span>Menganalisis...</span>
+                                </div>
+                            </div>
+                            <div id="snapshotTimestamp" class="text-muted" style="font-size: 12px; margin-top: 5px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audio Input -->
+                <div class="input-card tab-content" id="audioTab" style="display: none;">
+                    <div class="input-header">
+                        <i class="fas fa-microphone"></i>
+                        <h3>Analisis Suara</h3>
+                    </div>
+                    <div class="audio-container">
+                        <div class="audio-visualizer">
+                            <canvas id="audioVisualizer" width="400" height="150"></canvas>
+                            <div id="audioMeter" class="audio-meter">
+                                <div class="audio-level"></div>
+                                <div class="audio-pitch"></div>
+                            </div>
+                        </div>
+                        <div class="controls" style="margin-top: 20px;">
+                            <button id="startAudioAnalysis" class="btn">
+                                <i class="fas fa-play"></i> Mulai Analisis Suara
+                            </button>
+                            <button id="stopAudioAnalysis" class="btn" disabled>
+                                <i class="fas fa-stop"></i> Hentikan
+                            </button>
+                        </div>
+                        <div id="audioStatus" class="status" style="margin-top: 10px;">
+                            Klik tombol di atas untuk memulai analisis suara
+                        </div>
+                        
+                        <div class="audio-stats" style="margin-top: 20px;">
+                            <div class="stat-item">
+                                <span class="stat-label">Volume:</span>
+                                <span id="volumeValue" class="stat-value">0%</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Nada:</span>
+                                <span id="pitchValue" class="stat-value">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Emosi Terdeteksi:</span>
+                                <span id="detectedEmotion" class="stat-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Text Input -->
+                <div class="input-card tab-content" id="textTab" style="display: none;">
+                    <div class="input-header">
+                        <i class="fas fa-keyboard"></i>
+                        <h3>Text Input</h3>
+                    </div>
+                    <div class="text-container">
+                        <textarea id="textInput" placeholder="Describe how you're feeling..."></textarea>
+                        <button id="analyzeText" class="btn"><i class="fas fa-analyze"></i> Analyze Text</button>
+                        <div id="textStatus" class="status"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" class="results-section" style="display: none;">
+                <h3>Emotion Analysis Results</h3>
+                <div class="results-grid">
+                    <div id="happinessResult" class="result-card">
+                        <div class="emotion-header">
+                            <h4>Happiness</h4>
+                            <div class="score">0%</div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 0%; background-color: #4CAF50;"></div>
+                        </div>
+                    </div>
+                    <div id="sadnessResult" class="result-card">
+                        <div class="emotion-header">
+                            <h4>Sadness</h4>
+                            <div class="score">0%</div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 0%; background-color: #2196F3;"></div>
+                        </div>
+                    </div>
+                    <div id="angerResult" class="result-card">
+                        <div class="emotion-header">
+                            <h4>Anger</h4>
+                            <div class="score">0%</div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 0%; background-color: #f44336;"></div>
+                        </div>
+                    </div>
+                    <div id="neutralResult" class="result-card">
+                        <div class="emotion-header">
+                            <h4>Neutral</h4>
+                            <div class="score">0%</div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 0%; background-color: #9E9E9E;"></div>
+                        </div>
+                    </div>
+                    <div id="surpriseResult" class="result-card">
+                        <div class="emotion-header">
+                            <h4>Surprise</h4>
+                            <div class="score">0%</div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 0%; background-color: #FFC107;"></div>
+                        </div>
+                    </div>
+                    <div id="fearfulResult" class="result-card">
+                        <div class="emotion-header">
+                            <h4>Fearful</h4>
+                            <div class="score">0%</div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 0%; background-color: #9C27B0;"></div>
+                        </div>
+                    </div>
+                    <div id="disgustedResult" class="result-card">
+                        <div class="emotion-header">
+                            <h4>Disgusted</h4>
+                            <div class="score">0%</div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: 0%; background-color: #795548;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="submitEmotions" class="submit-btn">Submit Emotions</button>
+        </main>
+    </div>
+
+    <script src="js/dataStorage.js"></script>
+    <script src="js/data-services.js"></script>
+    <script src="js/history.js"></script>
+    <script src="js/emotionAnalyzer.js"></script>
+    <script src="js/emotion-input.js"></script>
+</body>
+</html>

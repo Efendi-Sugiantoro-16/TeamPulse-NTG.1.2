@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History</title>
+    <link rel="stylesheet" href="css/history.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/history.js"></script>
+    <script src="js/dataStorage.js"></script>
+</head>
+<body>
+<div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>TeamPulse</h2>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="dashboard.html"><i class="fas fa-chart-line"></i>Dashboard</a></li>
+                <li><a href="emotion-input.html"><i class="fas fa-face-smile"></i>Emotion Input</a></li>
+                <li><a href="history.html" class="active"><i class="fas fa-history"></i>History</a></li>
+                <li><a href="feedback.html"><i class="fas fa-comments"></i>Feedback</a></li>
+                <li><a href="settings.html"><i class="fas fa-gear"></i>Settings</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="history-main-content">
+        <div class="history-header">
+            <h1>History Overview</h1>
+            <p>Track and manage your activity history</p>
+        </div>
+
+        <!-- History Cards -->
+        <div class="history-cards">
+            <div class="history-card">
+                <div class="history-card-header">
+                    <h3 class="history-card-title">Total Entries</h3>
+                </div>
+                <div class="history-card-value" id="totalEntries">0</div>
+            </div>
+            <div class="history-card">
+                <div class="history-card-header">
+                    <h3 class="history-card-title">Last Action</h3>
+                </div>
+                <div class="history-card-value" id="lastAction">None</div>
+            </div>
+            <div class="history-card">
+                <div class="history-card-header">
+                    <h3 class="history-card-title">Last Action Time</h3>
+                </div>
+                <div class="history-card-value" id="lastActionTime">-</div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="history-filters">
+            <div class="history-filter">
+                <select id="actionFilter">
+                    <option value="">All Actions</option>
+                    <option value="create">Create</option>
+                    <option value="update">Update</option>
+                    <option value="delete">Delete</option>
+                </select>
+            </div>
+            <div class="history-filter">
+                <input type="date" id="startDate" placeholder="Start Date">
+            </div>
+            <div class="history-filter">
+                <input type="date" id="endDate" placeholder="End Date">
+            </div>
+            <div class="history-filter">
+                <input type="text" id="searchInput" placeholder="Search...">
+            </div>
+        </div>
+
+        <!-- History Table -->
+        <div class="history-table-container">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Action</th>
+                        <th>Details</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                    <!-- Table rows will be dynamically populated -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="history-pagination" id="pagination">
+            <button class="history-page-btn" id="prevPage">Previous</button>
+            <div id="pageNumbers"></div>
+            <button class="history-page-btn" id="nextPage">Next</button>
+        </div>
+    </main>
+</div>
+
+<script>
+    // Initialize HistoryManager
+    if (!window.historyManager) window.historyManager = new window.HistoryManager();
+    const historyManager = window.historyManager;
+    const dataStorage = new window.DataStorage();
+
+    // DOM Elements
+    const totalEntriesEl = document.getElementById('totalEntries');
+    const lastActionEl = document.getElementById('lastAction');
+    const lastActionTimeEl = document.getElementById('lastActionTime');
+    const historyTableBody = document.getElementById('historyTableBody');
+    const actionFilter = document.getElementById('actionFilter');
+    const startDate = document.getElementById('startDate');
+    const endDate = document.getElementById('endDate');
+    const searchInput = document.getElementById('searchInput');
+    const prevPageBtn = document.getElementById('prevPage');
+    const nextPageBtn = document.getElementById('nextPage');
+    const pageNumbers = document.getElementById('pageNumbers');
+
+    let currentPage = 1;
+    const itemsPerPage = 10;
+
+    // Update UI with history data
+    function updateUI(stats) {
+        totalEntriesEl.textContent = stats.totalEntries;
+        lastActionEl.textContent = stats.lastAction ? stats.lastAction.action : 'None';
+        lastActionTimeEl.textContent = stats.lastActionTime || '-';
+        updateTable();
+    }
+
+    // Update history table
+    function updateTable() {
+        const filters = {
+            action: actionFilter.value,
+            startDate: startDate.value,
+            endDate: endDate.value,
+            searchTerm: searchInput.value
+        };
+
+        const filteredHistory = historyManager.filterHistory(filters);
+        const pageData = historyManager.getHistoryPage(currentPage, itemsPerPage);
+        
+        // Clear table
+        historyTableBody.innerHTML = '';
+
+        // Add rows
+        pageData.entries.forEach(entry => {
+            const row = document.createElement('tr');
+            const dataId = entry.data && entry.data.id ? entry.data.id : '';
+            row.innerHTML = `
+                <td>${historyManager.formatDate(entry.timestamp)}</td>
+                <td>${entry.action}</td>
+                <td>${JSON.stringify(entry.data)}</td>
+                <td><span class="status ${historyManager.getStatusForAction(entry.action)}">${entry.action}</span></td>
+                <td>${dataId ? `<button class='delete-btn' data-id='${dataId}'>Delete</button>` : ''}</td>
+            `;
+            historyTableBody.appendChild(row);
+        });
+
+        // Add delete event listeners
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const id = btn.getAttribute('data-id');
+                if (id) {
+                    await dataStorage.deleteEmotionData(id);
+                    historyManager.addEntry('delete', { id });
+                    updateUI(historyManager.getHistoryStats());
+                }
+            });
+        });
+
+        // Update pagination
+        updatePagination(pageData.totalPages);
+    }
+
+    // Update pagination controls
+    function updatePagination(totalPages) {
+        pageNumbers.innerHTML = '';
+        
+        for (let i = 1; i <= totalPages; i++) {
+            const pageBtn = document.createElement('button');
+            pageBtn.className = `history-page-btn ${i === currentPage ? 'active' : ''}`;
+            pageBtn.textContent = i;
+            pageBtn.onclick = () => {
+                currentPage = i;
+                updateTable();
+            };
+            pageNumbers.appendChild(pageBtn);
+        }
+
+        prevPageBtn.disabled = currentPage === 1;
+        nextPageBtn.disabled = currentPage === totalPages;
+    }
+
+    // Event Listeners
+    actionFilter.addEventListener('change', () => {
+        currentPage = 1;
+        updateTable();
+    });
+
+    startDate.addEventListener('change', () => {
+        currentPage = 1;
+        updateTable();
+    });
+
+    endDate.addEventListener('change', () => {
+        currentPage = 1;
+        updateTable();
+    });
+
+    searchInput.addEventListener('input', () => {
+        currentPage = 1;
+        updateTable();
+    });
+
+    prevPageBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            updateTable();
+        }
+    });
+
+    nextPageBtn.addEventListener('click', () => {
+        const totalPages = Math.ceil(historyManager.history.length / itemsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            updateTable();
+        }
+    });
+
+    // Add observer for history changes
+    historyManager.addObserver(updateUI);
+
+    // Auto refresh history setiap 10 detik
+    setInterval(() => {
+        updateUI(historyManager.getHistoryStats());
+    }, 10000);
+
+    // Initial UI update
+    updateUI(historyManager.getHistoryStats());
+</script>
+</body>
+</html>
