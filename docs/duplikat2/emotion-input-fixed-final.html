@@ -115,9 +115,6 @@
                             <div class="status-message" id="cameraStatus">
                                 Click "Start Camera" to begin facial emotion detection
                             </div>
-                            <div class="camera-note" style="font-size:0.95em;color:#888;margin-top:4px;">
-                                Jika kamera tidak bisa diakses, pastikan tidak ada tab lain yang sedang menggunakan kamera dan browser sudah mengizinkan akses kamera.
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -257,19 +254,23 @@
     <!-- Fallback Script -->
     <script>
         // Fallback script to ensure functionality even if main scripts fail
-        window.fallbackActive = false;
         console.log('🔧 Fallback: Loading fallback script...');
+        
+        // Wait for DOM to be loaded
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 Fallback: DOM loaded, checking initialization...');
+            
+            // Check if main initialization failed
             setTimeout(() => {
                 if (!window.emotionInput) {
-                    window.fallbackActive = true;
                     console.warn('⚠️ Fallback: Main initialization failed, loading fallback...');
                     initializeFallback();
                 } else {
-                    window.fallbackActive = false;
                     console.log('✅ Fallback: Main initialization successful');
                 }
-            }, 5000);
+            }, 5000); // Wait 5 seconds for main initialization
+            
+            // Setup basic tab navigation as fallback
             setupBasicTabNavigation();
         });
         
@@ -345,22 +346,7 @@
                         updateStatus(cameraStatus, 'Camera active. Position your face in the camera view.', 'success');
                         
                     } catch (error) {
-                        let msg = 'Cannot access camera: ' + error.message;
-                        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-                            msg = 'Akses kamera ditolak oleh browser. Pastikan Anda sudah mengizinkan akses kamera.';
-                        } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-                            msg = 'Tidak ada kamera yang terdeteksi di perangkat ini.';
-                        } else if (error.name === 'NotReadableError') {
-                            msg = 'Kamera sedang digunakan oleh aplikasi/tab lain. Tutup aplikasi/tab lain yang menggunakan kamera.';
-                        }
-                        updateStatus(cameraStatus, msg, 'error');
-                        // Tampilkan error di #errorMessage
-                        const errorMessage = document.getElementById('errorMessage');
-                        const errorText = document.getElementById('errorText');
-                        if (errorMessage && errorText) {
-                            errorText.textContent = msg;
-                            errorMessage.style.display = 'block';
-                        }
+                        updateStatus(cameraStatus, 'Cannot access camera: ' + error.message, 'error');
                     }
                 });
             }
@@ -474,8 +460,8 @@
                 sad: Math.random() * 0.3,
                 angry: Math.random() * 0.2,
                 fearful: Math.random() * 0.1,
-                pleading: Math.random() * 0.1,
                 surprised: Math.random() * 0.1,
+                surprise: Math.random() * 0.1,
                 disgusted: Math.random() * 0.1,
                 neutral: Math.random() * 0.5
             };
@@ -491,8 +477,8 @@
                 'sad': { icon: '😢', label: 'Sedih' },
                 'angry': { icon: '😠', label: 'Marah' },
                 'fearful': { icon: '😨', label: 'Takut' },
-                'pleading': { icon: '🥺', label: 'Memohon' },
                 'surprised': { icon: '😲', label: 'Terkejut' },
+                'surprise': { icon: '😲', label: 'Terkejut' },
                 'disgusted': { icon: '🤢', label: 'Jijik' },
                 'neutral': { icon: '😐', label: 'Netral' }
             };
@@ -559,14 +545,6 @@
                     emotionBars.appendChild(bar);
                 });
             }
-            
-            // Reset tombol dan status setelah analisis
-            const startCamera = document.getElementById('startCamera');
-            const stopCamera = document.getElementById('stopCamera');
-            const captureEmotion = document.getElementById('captureEmotion');
-            if (startCamera) startCamera.disabled = false;
-            if (stopCamera) stopCamera.disabled = true;
-            if (captureEmotion) captureEmotion.disabled = true;
         }
         
         function showResults() {
@@ -605,4 +583,4 @@
         }
     </script>
 </body>
-</html>
+</html> 

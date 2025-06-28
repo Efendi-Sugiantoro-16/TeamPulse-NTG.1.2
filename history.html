@@ -7,7 +7,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="format-detection" content="telephone=no">
-    <title>History</title>
+    <title>History - TeamPulse</title>
+    <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/history.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -15,298 +16,546 @@
     <script src="js/dataStorage.js"></script>
 </head>
 <body>
-    <!-- Mobile Menu Toggle -->
-    <button class="menu-toggle" id="menuToggle">
-        <i class="fas fa-bars"></i>
-    </button>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h2>TeamPulse</h2>
+                <button id="sidebarClose" class="sidebar-close" aria-label="Close sidebar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
+                    <li><a href="emotion-input.html"><i class="fas fa-camera"></i>Emotion Input</a></li>
+                    <li><a href="history.html" class="active"><i class="fas fa-history"></i>History</a></li>
+                    <li><a href="feedback.html"><i class="fas fa-comments"></i>Feedback</a></li>
+                    <li><a href="settings.html"><i class="fas fa-cog"></i>Settings</a></li>
+                    <li><a href="index.html"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
 
-    <!-- Sidebar Overlay for Mobile -->
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <!-- Mobile Menu Toggle -->
+        <button id="menuToggle" class="menu-toggle" aria-label="Toggle navigation menu">
+            <i class="fas fa-bars"></i>
+        </button>
 
-<div class="dashboard-container">
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h2>TeamPulse</h2>
-            <button class="sidebar-close" id="sidebarClose">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <nav>
-            <ul>
-                <li><a href="dashboard.html"><i class="fas fa-chart-line"></i>Dashboard</a></li>
-                <li><a href="emotion-input.html"><i class="fas fa-face-smile"></i>Emotion Input</a></li>
-                <li><a href="history.html" class="active"><i class="fas fa-history"></i>History</a></li>
-                <li><a href="feedback.html"><i class="fas fa-comments"></i>Feedback</a></li>
-                <li><a href="settings.html"><i class="fas fa-gear"></i>Settings</a></li>
-            </ul>
-        </nav>
-    </aside>
+        <!-- Sidebar Overlay -->
+        <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
-    <!-- Main Content -->
-    <main class="history-main-content">
-        <div class="history-header">
-            <h1>History Overview</h1>
-            <p>Track and manage your activity history</p>
-        </div>
-
-        <!-- History Cards -->
-        <div class="history-cards">
-            <div class="history-card">
-                <div class="history-card-header">
-                    <h3 class="history-card-title">Total Entries</h3>
+        <!-- Main Content Area -->
+        <div class="content-area">
+            <div class="main-content">
+                <!-- Section Header -->
+                <div class="section-header">
+                    <h2>Emotion History & Analytics</h2>
+                    <p>Track and analyze your emotional journey over time</p>
                 </div>
-                <div class="history-card-value" id="totalEntries">0</div>
-            </div>
-            <div class="history-card">
-                <div class="history-card-header">
-                    <h3 class="history-card-title">Last Action</h3>
+
+                <!-- Filters and Search -->
+                <div class="filters-section">
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label for="dateRange" class="form-label">Date Range</label>
+                            <select id="dateRange" class="form-select">
+                                <option value="7">Last 7 days</option>
+                                <option value="30" selected>Last 30 days</option>
+                                <option value="90">Last 3 months</option>
+                                <option value="365">Last year</option>
+                                <option value="custom">Custom range</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="emotionFilter" class="form-label">Emotion Type</label>
+                            <select id="emotionFilter" class="form-select">
+                                <option value="all">All Emotions</option>
+                                <option value="happy">Happy</option>
+                                <option value="sad">Sad</option>
+                                <option value="angry">Angry</option>
+                                <option value="neutral">Neutral</option>
+                                <option value="surprised">Surprised</option>
+                                <option value="fearful">Fearful</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="inputType" class="form-label">Input Type</label>
+                            <select id="inputType" class="form-select">
+                                <option value="all">All Types</option>
+                                <option value="camera">Camera</option>
+                                <option value="audio">Audio</option>
+                                <option value="text">Text</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="searchInput" class="form-label">Search</label>
+                            <input type="text" id="searchInput" class="form-input" placeholder="Search emotions, notes...">
+                        </div>
+                    </div>
+                    <div class="filter-actions">
+                        <button id="applyFilters" class="btn btn-primary">
+                            <i class="fas fa-filter"></i>
+                            Apply Filters
+                        </button>
+                        <button id="clearFilters" class="btn btn-outline">
+                            <i class="fas fa-eraser"></i>
+                            Clear All
+                        </button>
+                        <button id="exportData" class="btn btn-secondary">
+                            <i class="fas fa-download"></i>
+                            Export Data
+                        </button>
+                    </div>
                 </div>
-                <div class="history-card-value" id="lastAction">None</div>
-            </div>
-            <div class="history-card">
-                <div class="history-card-header">
-                    <h3 class="history-card-title">Last Action Time</h3>
+
+                <!-- Statistics Overview -->
+                <div class="stats-overview">
+                    <div class="grid grid-cols-4">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3>Total Entries</h3>
+                                <div class="stat-value" id="totalEntries">1,247</div>
+                                <div class="stat-change positive">+12% this month</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-smile"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3>Average Mood</h3>
+                                <div class="stat-value" id="avgMood">7.8/10</div>
+                                <div class="stat-change positive">+0.5 from last month</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3>Streak Days</h3>
+                                <div class="stat-value" id="streakDays">15</div>
+                                <div class="stat-change">Current streak</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-trending-up"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3>Improvement</h3>
+                                <div class="stat-value" id="improvement">+18%</div>
+                                <div class="stat-change positive">vs last month</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="history-card-value" id="lastActionTime">-</div>
+
+                <!-- History Table -->
+                <div class="history-table-container">
+                    <div class="table-header">
+                        <h3>Emotion History</h3>
+                        <div class="table-actions">
+                            <button id="refreshTable" class="btn btn-sm btn-outline">
+                                <i class="fas fa-sync-alt"></i>
+                                Refresh
+                            </button>
+                            <button id="bulkActions" class="btn btn-sm btn-outline">
+                                <i class="fas fa-tasks"></i>
+                                Bulk Actions
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="history-table">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <input type="checkbox" id="selectAll">
+                                    </th>
+                                    <th>Date & Time</th>
+                                    <th>Emotion</th>
+                                    <th>Confidence</th>
+                                    <th>Input Type</th>
+                                    <th>Notes</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <!-- Sample data rows -->
+                                <tr>
+                                    <td><input type="checkbox" class="row-checkbox"></td>
+                                    <td>
+                                        <div class="datetime-cell">
+                                            <div class="date">Dec 15, 2024</div>
+                                            <div class="time">09:30 AM</div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="emotion-cell">
+                                            <span class="emotion-icon">😊</span>
+                                            <span class="emotion-label">Happy</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="confidence-cell">
+                                            <div class="progress">
+                                                <div class="progress-bar" style="width: 92%"></div>
+                                            </div>
+                                            <span>92%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="input-type camera">
+                                            <i class="fas fa-camera"></i>
+                                            Camera
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="notes-cell">
+                                            Feeling great about the project progress
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge success">Completed</span>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn btn-sm btn-outline" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><input type="checkbox" class="row-checkbox"></td>
+                                    <td>
+                                        <div class="datetime-cell">
+                                            <div class="date">Dec 14, 2024</div>
+                                            <div class="time">02:15 PM</div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="emotion-cell">
+                                            <span class="emotion-icon">😐</span>
+                                            <span class="emotion-label">Neutral</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="confidence-cell">
+                                            <div class="progress">
+                                                <div class="progress-bar" style="width: 78%"></div>
+                                            </div>
+                                            <span>78%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="input-type audio">
+                                            <i class="fas fa-microphone"></i>
+                                            Audio
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="notes-cell">
+                                            Regular check-in, feeling balanced
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge success">Completed</span>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn btn-sm btn-outline" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><input type="checkbox" class="row-checkbox"></td>
+                                    <td>
+                                        <div class="datetime-cell">
+                                            <div class="date">Dec 13, 2024</div>
+                                            <div class="time">11:45 AM</div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="emotion-cell">
+                                            <span class="emotion-icon">😔</span>
+                                            <span class="emotion-label">Sad</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="confidence-cell">
+                                            <div class="progress">
+                                                <div class="progress-bar" style="width: 85%"></div>
+                                            </div>
+                                            <span>85%</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="input-type text">
+                                            <i class="fas fa-keyboard"></i>
+                                            Text
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="notes-cell">
+                                            Feeling overwhelmed with workload
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge warning">Needs Review</span>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn btn-sm btn-outline" title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination-container">
+                    <div class="pagination-info">
+                        Showing <span id="startIndex">1</span> to <span id="endIndex">10</span> of <span id="totalItems">1,247</span> entries
+                    </div>
+                    <div class="pagination-controls">
+                        <button class="btn btn-sm btn-outline" id="firstPage" disabled>
+                            <i class="fas fa-angle-double-left"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline" id="prevPage" disabled>
+                            <i class="fas fa-angle-left"></i>
+                        </button>
+                        <div class="page-numbers">
+                            <button class="btn btn-sm btn-primary">1</button>
+                            <button class="btn btn-sm btn-outline">2</button>
+                            <button class="btn btn-sm btn-outline">3</button>
+                            <span class="page-ellipsis">...</span>
+                            <button class="btn btn-sm btn-outline">125</button>
+                        </div>
+                        <button class="btn btn-sm btn-outline" id="nextPage">
+                            <i class="fas fa-angle-right"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline" id="lastPage">
+                            <i class="fas fa-angle-double-right"></i>
+                        </button>
+                    </div>
+                    <div class="pagination-size">
+                        <label for="pageSize">Show:</label>
+                        <select id="pageSize" class="form-select">
+                            <option value="10">10</option>
+                            <option value="25" selected>25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                        <span>entries per page</span>
+                    </div>
+                </div>
             </div>
         </div>
+    </div>
 
-        <!-- Filters -->
-        <div class="history-filters">
-            <div class="history-filter">
-                <select id="actionFilter">
-                    <option value="">All Actions</option>
-                    <option value="create">Create</option>
-                    <option value="update">Update</option>
-                    <option value="delete">Delete</option>
-                </select>
-            </div>
-            <div class="history-filter">
-                <input type="date" id="startDate" placeholder="Start Date">
-            </div>
-            <div class="history-filter">
-                <input type="date" id="endDate" placeholder="End Date">
-            </div>
-            <div class="history-filter">
-                <input type="text" id="searchInput" placeholder="Search...">
-            </div>
-        </div>
+    <script>
+        // Initialize HistoryManager
+        if (!window.historyManager) window.historyManager = new window.HistoryManager();
+        const historyManager = window.historyManager;
+        const dataStorage = new window.DataStorage();
 
-        <!-- History Table -->
-        <div class="history-table-container">
-            <table class="history-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Action</th>
-                        <th>Details</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="historyTableBody">
-                    <!-- Table rows will be dynamically populated -->
-                </tbody>
-            </table>
-        </div>
+        // DOM Elements
+        const totalEntriesEl = document.getElementById('totalEntries');
+        const avgMoodEl = document.getElementById('avgMood');
+        const streakDaysEl = document.getElementById('streakDays');
+        const improvementEl = document.getElementById('improvement');
+        const historyTableBody = document.getElementById('historyTableBody');
+        const dateRange = document.getElementById('dateRange');
+        const emotionFilter = document.getElementById('emotionFilter');
+        const inputType = document.getElementById('inputType');
+        const searchInput = document.getElementById('searchInput');
+        const firstPageBtn = document.getElementById('firstPage');
+        const prevPageBtn = document.getElementById('prevPage');
+        const nextPageBtn = document.getElementById('nextPage');
+        const lastPageBtn = document.getElementById('lastPage');
+        const pageSize = document.getElementById('pageSize');
 
-        <!-- Pagination -->
-        <div class="history-pagination" id="pagination">
-            <button class="history-page-btn" id="prevPage">Previous</button>
-            <div id="pageNumbers"></div>
-            <button class="history-page-btn" id="nextPage">Next</button>
-        </div>
-    </main>
-</div>
+        let currentPage = 1;
+        const itemsPerPage = 10;
 
-<script>
-    // Initialize HistoryManager
-    if (!window.historyManager) window.historyManager = new window.HistoryManager();
-    const historyManager = window.historyManager;
-    const dataStorage = new window.DataStorage();
+        // Update UI with history data
+        function updateUI(stats) {
+            totalEntriesEl.textContent = stats.totalEntries;
+            avgMoodEl.textContent = stats.avgMood ? stats.avgMood.toFixed(1) + '/10' : 'N/A';
+            streakDaysEl.textContent = stats.streakDays || 'N/A';
+            improvementEl.textContent = stats.improvement ? stats.improvement.toFixed(1) + '%' : 'N/A';
+            updateTable();
+        }
 
-    // DOM Elements
-    const totalEntriesEl = document.getElementById('totalEntries');
-    const lastActionEl = document.getElementById('lastAction');
-    const lastActionTimeEl = document.getElementById('lastActionTime');
-    const historyTableBody = document.getElementById('historyTableBody');
-    const actionFilter = document.getElementById('actionFilter');
-    const startDate = document.getElementById('startDate');
-    const endDate = document.getElementById('endDate');
-    const searchInput = document.getElementById('searchInput');
-    const prevPageBtn = document.getElementById('prevPage');
-    const nextPageBtn = document.getElementById('nextPage');
-    const pageNumbers = document.getElementById('pageNumbers');
+        // Update history table
+        function updateTable() {
+            const filters = {
+                dateRange: dateRange.value,
+                emotion: emotionFilter.value,
+                inputType: inputType.value,
+                searchTerm: searchInput.value
+            };
 
-    let currentPage = 1;
-    const itemsPerPage = 10;
+            const filteredHistory = historyManager.filterHistory(filters);
+            const pageData = historyManager.getHistoryPage(currentPage, itemsPerPage);
+            
+            // Clear table
+            historyTableBody.innerHTML = '';
 
-    // Update UI with history data
-    function updateUI(stats) {
-        totalEntriesEl.textContent = stats.totalEntries;
-        lastActionEl.textContent = stats.lastAction ? stats.lastAction.action : 'None';
-        lastActionTimeEl.textContent = stats.lastActionTime || '-';
-        updateTable();
-    }
+            // Add rows
+            pageData.entries.forEach(entry => {
+                const row = document.createElement('tr');
+                const dataId = entry.data && entry.data.id ? entry.data.id : '';
+                row.innerHTML = `
+                    <td>${historyManager.formatDate(entry.timestamp)}</td>
+                    <td>${entry.emotion}</td>
+                    <td>${entry.confidence ? entry.confidence.toFixed(1) + '%' : 'N/A'}</td>
+                    <td>${entry.inputType}</td>
+                    <td>${entry.notes}</td>
+                    <td><span class="status ${historyManager.getStatusForAction(entry.action)}">${entry.action}</span></td>
+                    <td>${dataId ? `<button class='delete-btn' data-id='${dataId}'>Delete</button>` : ''}</td>
+                `;
+                historyTableBody.appendChild(row);
+            });
 
-    // Update history table
-    function updateTable() {
-        const filters = {
-            action: actionFilter.value,
-            startDate: startDate.value,
-            endDate: endDate.value,
-            searchTerm: searchInput.value
-        };
+            // Add delete event listeners
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = btn.getAttribute('data-id');
+                    if (id) {
+                        await dataStorage.deleteEmotionData(id);
+                        historyManager.addEntry('delete', { id });
+                        updateUI(historyManager.getHistoryStats());
+                    }
+                });
+            });
 
-        const filteredHistory = historyManager.filterHistory(filters);
-        const pageData = historyManager.getHistoryPage(currentPage, itemsPerPage);
-        
-        // Clear table
-        historyTableBody.innerHTML = '';
+            // Update pagination
+            updatePagination(pageData.totalPages);
+        }
 
-        // Add rows
-        pageData.entries.forEach(entry => {
-            const row = document.createElement('tr');
-            const dataId = entry.data && entry.data.id ? entry.data.id : '';
-            row.innerHTML = `
-                <td>${historyManager.formatDate(entry.timestamp)}</td>
-                <td>${entry.action}</td>
-                <td>${JSON.stringify(entry.data)}</td>
-                <td><span class="status ${historyManager.getStatusForAction(entry.action)}">${entry.action}</span></td>
-                <td>${dataId ? `<button class='delete-btn' data-id='${dataId}'>Delete</button>` : ''}</td>
-            `;
-            historyTableBody.appendChild(row);
+        // Update pagination controls
+        function updatePagination(totalPages) {
+            firstPageBtn.disabled = currentPage === 1;
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage === totalPages;
+            lastPageBtn.disabled = currentPage === totalPages;
+        }
+
+        // Event listeners
+        dateRange.addEventListener('change', updateTable);
+        emotionFilter.addEventListener('change', updateTable);
+        inputType.addEventListener('change', updateTable);
+        searchInput.addEventListener('input', updateTable);
+
+        firstPageBtn.addEventListener('click', () => {
+            currentPage = 1;
+            updateTable();
         });
 
-        // Add delete event listeners
-        document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const id = btn.getAttribute('data-id');
-                if (id) {
-                    await dataStorage.deleteEmotionData(id);
-                    historyManager.addEntry('delete', { id });
-                    updateUI(historyManager.getHistoryStats());
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                updateTable();
+            }
+        });
+
+        nextPageBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(historyManager.getHistory().length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                updateTable();
+            }
+        });
+
+        lastPageBtn.addEventListener('click', () => {
+            currentPage = Math.ceil(historyManager.getHistory().length / itemsPerPage);
+            updateTable();
+        });
+
+        pageSize.addEventListener('change', () => {
+            currentPage = 1;
+            updateTable();
+        });
+
+        // Initialize
+        updateUI(historyManager.getHistoryStats());
+
+        // Mobile menu functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const sidebarClose = document.getElementById('sidebarClose');
+
+            function openMobileMenu() {
+                sidebar.classList.add('active');
+                sidebarOverlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeMobileMenu() {
+                sidebar.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            if (menuToggle) {
+                menuToggle.addEventListener('click', openMobileMenu);
+            }
+
+            if (sidebarClose) {
+                sidebarClose.addEventListener('click', closeMobileMenu);
+            }
+
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', closeMobileMenu);
+            }
+
+            // Close menu when clicking on navigation links
+            const navLinks = sidebar.querySelectorAll('nav a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', closeMobileMenu);
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 991) {
+                    closeMobileMenu();
                 }
             });
         });
-
-        // Update pagination
-        updatePagination(pageData.totalPages);
-    }
-
-    // Update pagination controls
-    function updatePagination(totalPages) {
-        pageNumbers.innerHTML = '';
-        
-        for (let i = 1; i <= totalPages; i++) {
-            const pageBtn = document.createElement('button');
-            pageBtn.className = `history-page-btn ${i === currentPage ? 'active' : ''}`;
-            pageBtn.textContent = i;
-            pageBtn.onclick = () => {
-                currentPage = i;
-                updateTable();
-            };
-            pageNumbers.appendChild(pageBtn);
-        }
-
-        prevPageBtn.disabled = currentPage === 1;
-        nextPageBtn.disabled = currentPage === totalPages;
-    }
-
-    // Event Listeners
-    actionFilter.addEventListener('change', () => {
-        currentPage = 1;
-        updateTable();
-    });
-
-    startDate.addEventListener('change', () => {
-        currentPage = 1;
-        updateTable();
-    });
-
-    endDate.addEventListener('change', () => {
-        currentPage = 1;
-        updateTable();
-    });
-
-    searchInput.addEventListener('input', () => {
-        currentPage = 1;
-        updateTable();
-    });
-
-    prevPageBtn.addEventListener('click', () => {
-        if (currentPage > 1) {
-            currentPage--;
-            updateTable();
-        }
-    });
-
-    nextPageBtn.addEventListener('click', () => {
-        const totalPages = Math.ceil(historyManager.history.length / itemsPerPage);
-        if (currentPage < totalPages) {
-            currentPage++;
-            updateTable();
-        }
-    });
-
-    // Add observer for history changes
-    historyManager.addObserver(updateUI);
-
-    // Auto refresh history setiap 10 detik
-    setInterval(() => {
-        updateUI(historyManager.getHistoryStats());
-    }, 10000);
-
-    // Initial UI update
-    updateUI(historyManager.getHistoryStats());
-</script>
-
-<script>
-    // Mobile menu functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        const menuToggle = document.getElementById('menuToggle');
-        const sidebar = document.getElementById('sidebar');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-        const sidebarClose = document.getElementById('sidebarClose');
-
-        function openMobileMenu() {
-            sidebar.classList.add('active');
-            sidebarOverlay.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeMobileMenu() {
-            sidebar.classList.remove('active');
-            sidebarOverlay.classList.remove('active');
-            document.body.style.overflow = '';
-        }
-
-        if (menuToggle) {
-            menuToggle.addEventListener('click', openMobileMenu);
-        }
-
-        if (sidebarClose) {
-            sidebarClose.addEventListener('click', closeMobileMenu);
-        }
-
-        if (sidebarOverlay) {
-            sidebarOverlay.addEventListener('click', closeMobileMenu);
-        }
-
-        // Close menu when clicking on navigation links
-        const navLinks = sidebar.querySelectorAll('nav a');
-        navLinks.forEach(link => {
-            link.addEventListener('click', closeMobileMenu);
-        });
-
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            if (window.innerWidth > 991) {
-                closeMobileMenu();
-            }
-        });
-    });
-</script>
+    </script>
 </body>
 </html>

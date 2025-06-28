@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Input Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>Emotion Input Test Page</h1>
+    
+    <div class="test-section">
+        <h3>File Dependencies Test</h3>
+        <div id="fileTest"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>JavaScript Loading Test</h3>
+        <div id="jsTest"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Browser Console Test</h3>
+        <div id="consoleTest"></div>
+        <button onclick="testConsole()">Test Console</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>Camera Access Test</h3>
+        <div id="cameraTest"></div>
+        <button onclick="testCamera()">Test Camera Access</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>Audio Access Test</h3>
+        <div id="audioTest"></div>
+        <button onclick="testAudio()">Test Audio Access</button>
+    </div>
+
+    <script>
+        // Test file dependencies
+        function testFiles() {
+            const files = [
+                'js/sidebar.js',
+                'js/emotionAnalyzer.js', 
+                'js/emotion-input.js',
+                'css/global.css',
+                'css/emotion-input.css'
+            ];
+            
+            const fileTestDiv = document.getElementById('fileTest');
+            let results = '';
+            
+            files.forEach(file => {
+                fetch(file)
+                    .then(response => {
+                        if (response.ok) {
+                            results += `<div class="success">✅ ${file} - Found</div>`;
+                        } else {
+                            results += `<div class="error">❌ ${file} - Not Found (${response.status})</div>`;
+                        }
+                        fileTestDiv.innerHTML = results;
+                    })
+                    .catch(error => {
+                        results += `<div class="error">❌ ${file} - Error: ${error.message}</div>`;
+                        fileTestDiv.innerHTML = results;
+                    });
+            });
+        }
+        
+        // Test JavaScript loading
+        function testJavaScript() {
+            const jsTestDiv = document.getElementById('jsTest');
+            let results = '';
+            
+            // Test if basic objects exist
+            if (typeof window !== 'undefined') {
+                results += '<div class="success">✅ Window object available</div>';
+            } else {
+                results += '<div class="error">❌ Window object not available</div>';
+            }
+            
+            if (typeof document !== 'undefined') {
+                results += '<div class="success">✅ Document object available</div>';
+            } else {
+                results += '<div class="error">❌ Document object not available</div>';
+            }
+            
+            if (navigator.mediaDevices) {
+                results += '<div class="success">✅ MediaDevices API available</div>';
+            } else {
+                results += '<div class="error">❌ MediaDevices API not available</div>';
+            }
+            
+            if (typeof faceapi !== 'undefined') {
+                results += '<div class="success">✅ face-api.js loaded</div>';
+            } else {
+                results += '<div class="warning">⚠️ face-api.js not loaded (will be loaded dynamically)</div>';
+            }
+            
+            jsTestDiv.innerHTML = results;
+        }
+        
+        // Test console
+        function testConsole() {
+            const consoleTestDiv = document.getElementById('consoleTest');
+            try {
+                console.log('Test console message');
+                consoleTestDiv.innerHTML = '<div class="success">✅ Console working - check browser console for test message</div>';
+            } catch (error) {
+                consoleTestDiv.innerHTML = `<div class="error">❌ Console error: ${error.message}</div>`;
+            }
+        }
+        
+        // Test camera access
+        async function testCamera() {
+            const cameraTestDiv = document.getElementById('cameraTest');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                cameraTestDiv.innerHTML = '<div class="success">✅ Camera access granted</div>';
+                stream.getTracks().forEach(track => track.stop());
+            } catch (error) {
+                cameraTestDiv.innerHTML = `<div class="error">❌ Camera access denied: ${error.message}</div>`;
+            }
+        }
+        
+        // Test audio access
+        async function testAudio() {
+            const audioTestDiv = document.getElementById('audioTest');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioTestDiv.innerHTML = '<div class="success">✅ Audio access granted</div>';
+                stream.getTracks().forEach(track => track.stop());
+            } catch (error) {
+                audioTestDiv.innerHTML = `<div class="error">❌ Audio access denied: ${error.message}</div>`;
+            }
+        }
+        
+        // Run tests on page load
+        window.onload = function() {
+            testFiles();
+            testJavaScript();
+        };
+    </script>
+</body>
+</html> 

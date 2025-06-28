@@ -3,83 +3,349 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TeamPulse - Your Team's Emotional Radar</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- TensorFlow.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0/dist/tf.min.js"></script>
-    <!-- Face-api.js -->
-    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <meta name="description" content="TeamPulse - Advanced team emotional intelligence platform with real-time monitoring and AI-powered insights">
+    <meta name="keywords" content="team management, emotional intelligence, workplace analytics, team pulse, employee engagement">
+    <title>TeamPulse - Your Team's Emotional Radar | AI-Powered Team Intelligence</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="images/logo.jpg">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/landing.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="images/hero-image.jpg" as="image">
+    <link rel="preload" href="images/logo.jpg" as="image">
 </head>
 <body>
-    <!-- Header -->
-    <header class="header">
-        <div class="logo">
-            <img src="images/logo.jpg" alt="TeamPulse Logo" id="logo">
-            <span>TeamPulse</span>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="images/logo.jpg" alt="TeamPulse Logo" class="logo-img">
+                <span class="logo-text">TeamPulse</span>
+            </div>
+            
+            <div class="nav-menu" id="nav-menu">
+                <a href="#home" class="nav-link active">Home</a>
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#how-it-works" class="nav-link">How It Works</a>
+                <a href="#pricing" class="nav-link">Pricing</a>
+                <a href="#about" class="nav-link">About</a>
+                <a href="#contact" class="nav-link">Contact</a>
+            </div>
+            
+            <div class="nav-buttons">
+                <a href="login.html" class="btn btn-outline btn-sm">Login</a>
+                <a href="signup.html" class="btn btn-primary btn-sm">Get Started</a>
+            </div>
+            
+            <div class="nav-toggle" id="nav-toggle">
+                <span class="hamburger"></span>
+            </div>
         </div>
-        <nav class="nav-menu">
-            <ul>
-                <li><a href="#home" class="active">Home</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="#features">Features</a></li>
-                <li><a href="#contact">Contact</a></li>
-            </ul>
-        </nav>
-        <div class="auth-buttons">
-            <button class="btn login-btn">Login</button>
-            <button class="btn signup-btn">Sign Up</button>
-        </div>
-    </header>
+    </nav>
 
     <!-- Hero Section -->
     <section class="hero" id="home">
-        <div class="hero-content">
-            <h1>TeamPulse – Your Team's Emotional Radar</h1>
-            <p>Track, understand, and improve your team's emotional well-being in real-time. Make data-driven decisions to create a more harmonious workplace.</p>
-            <button class="btn cta-btn">Get Started</button>
+        <div class="hero-container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fas fa-star"></i>
+                    <span>Trusted by 500+ teams worldwide</span>
+                </div>
+                
+                <h1 class="hero-title">
+                    Transform Your Team with 
+                    <span class="gradient-text">Emotional Intelligence</span>
+                </h1>
+                
+                <p class="hero-description">
+                    TeamPulse uses advanced AI to monitor, analyze, and improve your team's emotional well-being in real-time. 
+                    Make data-driven decisions to create a more harmonious and productive workplace.
+                </p>
+                
+                <div class="hero-actions">
+                    <a href="signup.html" class="btn btn-primary btn-lg">
+                        <i class="fas fa-rocket"></i>
+                        Start Free Trial
+                    </a>
+                    <a href="#demo" class="btn btn-outline btn-lg">
+                        <i class="fas fa-play"></i>
+                        Watch Demo
+                    </a>
+                </div>
+                
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">98%</span>
+                        <span class="stat-label">Accuracy Rate</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">24/7</span>
+                        <span class="stat-label">Real-time Monitoring</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">500+</span>
+                        <span class="stat-label">Teams Trust Us</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hero-visual">
+                <div class="hero-image-container">
+                    <img src="images/hero-image.jpg" alt="TeamPulse Dashboard Interface" class="hero-image">
+                    <div class="hero-overlay">
+                        <div class="floating-card card-1">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Live Analytics</span>
+                        </div>
+                        <div class="floating-card card-2">
+                            <i class="fas fa-users"></i>
+                            <span>Team Pulse</span>
+                        </div>
+                        <div class="floating-card card-3">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>AI Insights</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="hero-image">
-            <img src="images/hero-image.jpg" alt="TeamPulse Dashboard Preview">
+        
+        <div class="hero-wave">
+            <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" class="shape-fill"></path>
+                <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" opacity=".5" class="shape-fill"></path>
+                <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z" class="shape-fill"></path>
+            </svg>
         </div>
     </section>
 
     <!-- Features Section -->
     <section class="features" id="features">
-        <h2>Key Features</h2>
-        <div class="features-grid">
-            <div class="feature-card">
-                <i class="fas fa-chart-line"></i>
-                <h3>Emotion Tracking</h3>
-                <p>Real-time monitoring of team emotional states using advanced AI technology.</p>
+        <div class="container">
+            <div class="section-header">
+                <h2>Powerful Features for Modern Teams</h2>
+                <p>Everything you need to understand and improve your team's emotional intelligence</p>
             </div>
-            <div class="feature-card">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h3>Conflict Detection</h3>
-                <p>Early warning system to identify and prevent potential team conflicts.</p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3>AI-Powered Emotion Detection</h3>
+                    <p>Advanced facial recognition and voice analysis to accurately detect team emotions in real-time.</p>
+                    <ul class="feature-list">
+                        <li>Facial expression analysis</li>
+                        <li>Voice tone detection</li>
+                        <li>Emotion pattern recognition</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Real-time Analytics</h3>
+                    <p>Comprehensive dashboards with live insights into team mood, stress levels, and engagement.</p>
+                    <ul class="feature-list">
+                        <li>Live emotion tracking</li>
+                        <li>Trend analysis</li>
+                        <li>Predictive insights</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3>Conflict Prevention</h3>
+                    <p>Early warning system that identifies potential conflicts before they escalate.</p>
+                    <ul class="feature-list">
+                        <li>Stress level monitoring</li>
+                        <li>Conflict prediction</li>
+                        <li>Intervention suggestions</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3>Smart Feedback System</h3>
+                    <p>Automated feedback mechanisms that improve team communication and collaboration.</p>
+                    <ul class="feature-list">
+                        <li>Anonymous feedback</li>
+                        <li>Mood-based suggestions</li>
+                        <li>Team building activities</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Privacy & Security</h3>
+                    <p>Enterprise-grade security with complete data privacy and GDPR compliance.</p>
+                    <ul class="feature-list">
+                        <li>End-to-end encryption</li>
+                        <li>GDPR compliant</li>
+                        <li>Secure data storage</li>
+                    </ul>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h3>Mobile-First Design</h3>
+                    <p>Access your team insights anywhere with our responsive mobile and desktop applications.</p>
+                    <ul class="feature-list">
+                        <li>Cross-platform support</li>
+                        <li>Offline capabilities</li>
+                        <li>Push notifications</li>
+                    </ul>
+                </div>
             </div>
-            <div class="feature-card">
-                <i class="fas fa-comments"></i>
-                <h3>Real-time Feedback</h3>
-                <p>Instant feedback mechanisms to improve team communication.</p>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <h2>How TeamPulse Works</h2>
+                <p>Simple setup, powerful results in just three easy steps</p>
+            </div>
+            
+            <div class="steps-container">
+                <div class="step-item">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Connect Your Team</h3>
+                        <p>Integrate TeamPulse with your existing communication tools and workspace platforms.</p>
+                        <div class="step-features">
+                            <span class="step-feature">Slack Integration</span>
+                            <span class="step-feature">Microsoft Teams</span>
+                            <span class="step-feature">Zoom Support</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step-item">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>AI Starts Learning</h3>
+                        <p>Our AI analyzes team interactions and builds personalized emotion recognition models.</p>
+                        <div class="step-features">
+                            <span class="step-feature">Pattern Recognition</span>
+                            <span class="step-feature">Personalized Models</span>
+                            <span class="step-feature">Continuous Learning</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step-item">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Get Actionable Insights</h3>
+                        <p>Receive real-time reports and recommendations to improve team dynamics and productivity.</p>
+                        <div class="step-features">
+                            <span class="step-feature">Real-time Reports</span>
+                            <span class="step-feature">Actionable Insights</span>
+                            <span class="step-feature">Performance Metrics</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <h2>Ready to Transform Your Team?</h2>
+                <p>Join thousands of teams already using TeamPulse to improve their workplace culture and productivity.</p>
+                <div class="cta-actions">
+                    <a href="signup.html" class="btn btn-primary btn-lg">
+                        <i class="fas fa-rocket"></i>
+                        Start Free Trial
+                    </a>
+                    <a href="#contact" class="btn btn-outline btn-lg">
+                        <i class="fas fa-phone"></i>
+                        Talk to Sales
+                    </a>
+                </div>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
     <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-links">
-                <a href="#">Privacy Policy</a>
-                <a href="#">Terms of Service</a>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-logo">
+                        <img src="images/logo.jpg" alt="TeamPulse Logo" class="logo-img">
+                        <span class="logo-text">TeamPulse</span>
+                    </div>
+                    <p>Empowering teams with emotional intelligence through advanced AI technology.</p>
+                    <div class="social-links">
+                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+                        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#pricing">Pricing</a></li>
+                        <li><a href="#demo">Demo</a></li>
+                        <li><a href="#api">API</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Company</h4>
+                    <ul>
+                        <li><a href="#about">About</a></li>
+                        <li><a href="#careers">Careers</a></li>
+                        <li><a href="#blog">Blog</a></li>
+                        <li><a href="#press">Press</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Support</h4>
+                    <ul>
+                        <li><a href="#help">Help Center</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                        <li><a href="#privacy">Privacy Policy</a></li>
+                        <li><a href="#terms">Terms of Service</a></li>
+                    </ul>
+                </div>
             </div>
-            <p>&copy; 2025 TeamPulse By JombloKurangTuru.com. All rights reserved.</p>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 TeamPulse by JombloKurangTuru.com. All rights reserved.</p>
+                <div class="footer-bottom-links">
+                    <a href="#privacy">Privacy</a>
+                    <a href="#terms">Terms</a>
+                    <a href="#cookies">Cookies</a>
+                </div>
+            </div>
         </div>
     </footer>
 
-    <!-- Face-api.js and its models -->
-    <script src="https://cdn.jsdelivr.net/npm/face-api.js"></script>
-    <script src="js/emotion-input.js"></script>
+    <!-- Scripts -->
     <script src="js/main.js"></script>
 </body>
 </html>

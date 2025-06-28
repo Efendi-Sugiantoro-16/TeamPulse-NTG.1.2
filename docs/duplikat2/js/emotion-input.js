@@ -476,16 +476,93 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
 
         // Initialize emotion display
         initializeEmotionDisplay() {
-            // Initialize with zero values for only the specified emotions
+            // Initialize with zero values for all possible emotions
             const initialEmotions = {
                 happy: 0,
                 sad: 0,
                 angry: 0,
                 fearful: 0,
-                pleading: 0,
                 surprised: 0,
+                surprise: 0,
                 disgusted: 0,
-                neutral: 0
+                neutral: 0,
+                contempt: 0,
+                confused: 0,
+                anxious: 0,
+                embarrassed: 0,
+                proud: 0,
+                relieved: 0,
+                satisfied: 0,
+                amused: 0,
+                inspired: 0,
+                determined: 0,
+                focused: 0,
+                thoughtful: 0,
+                peaceful: 0,
+                grateful: 0,
+                hopeful: 0,
+                confident: 0,
+                curious: 0,
+                worried: 0,
+                frustrated: 0,
+                lonely: 0,
+                overwhelmed: 0,
+                stressed: 0,
+                tired: 0,
+                bored: 0,
+                irritated: 0,
+                jealous: 0,
+                guilty: 0,
+                ashamed: 0,
+                disappointed: 0,
+                hurt: 0,
+                vulnerable: 0,
+                insecure: 0,
+                defensive: 0,
+                aggressive: 0,
+                hostile: 0,
+                contemptuous: 0,
+                revolted: 0,
+                appalled: 0,
+                horrified: 0,
+                terrified: 0,
+                panicked: 0,
+                hysterical: 0,
+                overjoyed: 0,
+                ecstatic: 0,
+                elated: 0,
+                euphoric: 0,
+                thrilled: 0,
+                exhilarated: 0,
+                jubilant: 0,
+                triumphant: 0,
+                victorious: 0,
+                accomplished: 0,
+                fulfilled: 0,
+                content: 0,
+                serene: 0,
+                tranquil: 0,
+                calm: 0,
+                relaxed: 0,
+                at_ease: 0,
+                comfortable: 0,
+                secure: 0,
+                safe: 0,
+                protected: 0,
+                supported: 0,
+                loved: 0,
+                cherished: 0,
+                valued: 0,
+                appreciated: 0,
+                respected: 0,
+                admired: 0,
+                esteemed: 0,
+                honored: 0,
+                revered: 0,
+                worshiped: 0,
+                adored: 0,
+                idolized: 0,
+                worshipped: 0
             };
             // Don't update results yet, wait for actual analysis
             this.lastEmotions = initialEmotions;
@@ -708,26 +785,104 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
             this.isAnalyzing = false;
         }
 
-        updateResults(emotions) {
+        updateEmotionResults(expressions) {
             // Store emotions for later use
-            this.lastEmotions = emotions;
+            this.lastEmotions = expressions;
             
             // Find dominant emotion
-            const dominantEmotion = Object.entries(emotions).reduce(
+            const dominantEmotion = Object.entries(expressions).reduce(
                 (a, b) => a[1] > b[1] ? a : b
             );
             
             // Update primary emotion display
             if (this.primaryEmotion) {
-                const emotionMap = {
+            const emotionMap = {
                     'happy': { icon: '😊', label: 'Senang' },
                     'sad': { icon: '😢', label: 'Sedih' },
                     'angry': { icon: '😠', label: 'Marah' },
                     'fearful': { icon: '😨', label: 'Takut' },
-                    'pleading': { icon: '🥺', label: 'Memohon' },
                     'surprised': { icon: '😲', label: 'Terkejut' },
+                    'surprise': { icon: '😲', label: 'Terkejut' },
                     'disgusted': { icon: '🤢', label: 'Jijik' },
-                    'neutral': { icon: '😐', label: 'Netral' }
+                    'neutral': { icon: '😐', label: 'Netral' },
+                    'excited': { icon: '🤩', label: 'Bersemangat' },
+                    'confused': { icon: '😕', label: 'Bingung' },
+                    'anxious': { icon: '😰', label: 'Cemas' },
+                    'contempt': { icon: '😏', label: 'Meremehkan' },
+                    'embarrassed': { icon: '😳', label: 'Malu' },
+                    'proud': { icon: '😌', label: 'Bangga' },
+                    'relieved': { icon: '😌', label: 'Lega' },
+                    'satisfied': { icon: '😊', label: 'Puas' },
+                    'amused': { icon: '😄', label: 'Terhibur' },
+                    'inspired': { icon: '🤔', label: 'Terinspirasi' },
+                    'determined': { icon: '😤', label: 'Bertekad' },
+                    'focused': { icon: '🤨', label: 'Fokus' },
+                    'thoughtful': { icon: '🤔', label: 'Bijaksana' },
+                    'peaceful': { icon: '😌', label: 'Tenang' },
+                    'grateful': { icon: '🙏', label: 'Bersyukur' },
+                    'hopeful': { icon: '🤗', label: 'Berharap' },
+                    'confident': { icon: '😎', label: 'Percaya Diri' },
+                    'curious': { icon: '🤔', label: 'Penasaran' },
+                    'worried': { icon: '😟', label: 'Khawatir' },
+                    'frustrated': { icon: '😤', label: 'Frustrasi' },
+                    'lonely': { icon: '🥺', label: 'Kesepian' },
+                    'overwhelmed': { icon: '😵', label: 'Kewalahan' },
+                    'stressed': { icon: '😰', label: 'Stres' },
+                    'tired': { icon: '😴', label: 'Lelah' },
+                    'bored': { icon: '🥱', label: 'Bosan' },
+                    'irritated': { icon: '😤', label: 'Kesal' },
+                    'jealous': { icon: '😒', label: 'Cemburu' },
+                    'guilty': { icon: '😔', label: 'Bersalah' },
+                    'ashamed': { icon: '😞', label: 'Malu' },
+                    'disappointed': { icon: '😞', label: 'Kecewa' },
+                    'hurt': { icon: '🥺', label: 'Sakit Hati' },
+                    'vulnerable': { icon: '🥺', label: 'Rentan' },
+                    'insecure': { icon: '😰', label: 'Tidak Aman' },
+                    'defensive': { icon: '😤', label: 'Defensif' },
+                    'aggressive': { icon: '😠', label: 'Agresif' },
+                    'hostile': { icon: '😡', label: 'Memusuhi' },
+                    'contemptuous': { icon: '😏', label: 'Meremehkan' },
+                    'revolted': { icon: '🤮', label: 'Jijik' },
+                    'appalled': { icon: '😱', label: 'Terkejut' },
+                    'horrified': { icon: '😱', label: 'Ngeri' },
+                    'terrified': { icon: '😨', label: 'Ketakutan' },
+                    'panicked': { icon: '😰', label: 'Panik' },
+                    'hysterical': { icon: '😵', label: 'Histeris' },
+                    'overjoyed': { icon: '🤩', label: 'Sangat Senang' },
+                    'ecstatic': { icon: '🤩', label: 'Ekstasi' },
+                    'elated': { icon: '😊', label: 'Gembira' },
+                    'euphoric': { icon: '🤩', label: 'Euforia' },
+                    'thrilled': { icon: '🤩', label: 'Tergugah' },
+                    'exhilarated': { icon: '🤩', label: 'Bersemangat' },
+                    'jubilant': { icon: '🎉', label: 'Bergembira' },
+                    'triumphant': { icon: '🏆', label: 'Menang' },
+                    'victorious': { icon: '🏆', label: 'Menang' },
+                    'accomplished': { icon: '😌', label: 'Berhasil' },
+                    'fulfilled': { icon: '😊', label: 'Terpenuhi' },
+                    'content': { icon: '😌', label: 'Puas' },
+                    'serene': { icon: '😌', label: 'Tenteram' },
+                    'tranquil': { icon: '😌', label: 'Tenteram' },
+                    'calm': { icon: '😌', label: 'Tenang' },
+                    'relaxed': { icon: '😌', label: 'Santai' },
+                    'at_ease': { icon: '😌', label: 'Nyaman' },
+                    'comfortable': { icon: '😌', label: 'Nyaman' },
+                    'secure': { icon: '😊', label: 'Aman' },
+                    'safe': { icon: '😊', label: 'Aman' },
+                    'protected': { icon: '😊', label: 'Terlindungi' },
+                    'supported': { icon: '🤗', label: 'Didukung' },
+                    'loved': { icon: '🥰', label: 'Dicintai' },
+                    'cherished': { icon: '🥰', label: 'Disayangi' },
+                    'valued': { icon: '😊', label: 'Dihargai' },
+                    'appreciated': { icon: '😊', label: 'Dihargai' },
+                    'respected': { icon: '😊', label: 'Dihormati' },
+                    'admired': { icon: '😊', label: 'Dikagumi' },
+                    'esteemed': { icon: '😊', label: 'Dihormati' },
+                    'honored': { icon: '😊', label: 'Dihormati' },
+                    'revered': { icon: '🙏', label: 'Dihormati' },
+                    'worshiped': { icon: '🙏', label: 'Disembah' },
+                    'adored': { icon: '🥰', label: 'Disembah' },
+                    'idolized': { icon: '🤩', label: 'Dipuja' },
+                    'worshipped': { icon: '🙏', label: 'Disembah' }
                 };
                 
                 const emotion = emotionMap[dominantEmotion[0]] || emotionMap['neutral'];
@@ -746,13 +901,13 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
                 
                 // Update mood score (simple calculation)
                 if (this.moodScore) {
-                    const moodScore = Math.round((emotions.happy * 0.4 + emotions.neutral * 0.3 + (1 - emotions.sad - emotions.angry) * 0.3) * 10);
+                    const moodScore = Math.round((expressions.happy * 0.4 + expressions.neutral * 0.3 + (1 - expressions.sad - expressions.angry) * 0.3) * 10);
                     this.moodScore.textContent = `${moodScore}/10`;
                 }
                 
                 // Update stress indicator
                 if (this.stressIndicator) {
-                    const stressLevel = emotions.angry + emotions.sad;
+                    const stressLevel = expressions.angry + expressions.sad;
                     if (stressLevel > 0.7) {
                         this.stressIndicator.textContent = 'High';
                         this.stressIndicator.className = 'stress-indicator high';
@@ -769,7 +924,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
                 if (this.emotionBars) {
                     this.emotionBars.innerHTML = '';
                     
-                    Object.entries(emotions).forEach(([emotion, value]) => {
+                    Object.entries(expressions).forEach(([emotion, value]) => {
                         const percentage = Math.round(value * 100);
                         const bar = document.createElement('div');
                         bar.className = 'emotion-bar';
@@ -784,8 +939,6 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
                     });
                 }
             }
-            // Always show results section after updating results
-            this.showResultsSection();
         }
 
         // Draw face detections and expressions on canvas
@@ -976,17 +1129,251 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
             }
         }
 
+        updateResults(emotions) {
+            // Store emotions for later use
+            this.lastEmotions = emotions;
+            
+            // Find dominant emotion
+            const dominantEmotion = Object.entries(emotions).reduce(
+                (a, b) => a[1] > b[1] ? a : b
+            );
+            
+            // Update primary emotion display
+            if (this.primaryEmotion) {
+                const emotionMap = {
+                    'happy': { icon: '😊', label: 'Senang' },
+                    'sad': { icon: '😢', label: 'Sedih' },
+                    'angry': { icon: '😠', label: 'Marah' },
+                    'fearful': { icon: '😨', label: 'Takut' },
+                    'surprised': { icon: '😲', label: 'Terkejut' },
+                    'surprise': { icon: '😲', label: 'Terkejut' },
+                    'disgusted': { icon: '🤢', label: 'Jijik' },
+                    'neutral': { icon: '😐', label: 'Netral' },
+                    'excited': { icon: '🤩', label: 'Bersemangat' },
+                    'confused': { icon: '😕', label: 'Bingung' },
+                    'anxious': { icon: '😰', label: 'Cemas' },
+                    'contempt': { icon: '😏', label: 'Meremehkan' },
+                    'embarrassed': { icon: '😳', label: 'Malu' },
+                    'proud': { icon: '😌', label: 'Bangga' },
+                    'relieved': { icon: '😌', label: 'Lega' },
+                    'satisfied': { icon: '😊', label: 'Puas' },
+                    'amused': { icon: '😄', label: 'Terhibur' },
+                    'inspired': { icon: '🤔', label: 'Terinspirasi' },
+                    'determined': { icon: '😤', label: 'Bertekad' },
+                    'focused': { icon: '🤨', label: 'Fokus' },
+                    'thoughtful': { icon: '🤔', label: 'Bijaksana' },
+                    'peaceful': { icon: '😌', label: 'Tenang' },
+                    'grateful': { icon: '🙏', label: 'Bersyukur' },
+                    'hopeful': { icon: '🤗', label: 'Berharap' },
+                    'confident': { icon: '😎', label: 'Percaya Diri' },
+                    'curious': { icon: '🤔', label: 'Penasaran' },
+                    'worried': { icon: '😟', label: 'Khawatir' },
+                    'frustrated': { icon: '😤', label: 'Frustrasi' },
+                    'lonely': { icon: '🥺', label: 'Kesepian' },
+                    'overwhelmed': { icon: '😵', label: 'Kewalahan' },
+                    'stressed': { icon: '😰', label: 'Stres' },
+                    'tired': { icon: '😴', label: 'Lelah' },
+                    'bored': { icon: '🥱', label: 'Bosan' },
+                    'irritated': { icon: '😤', label: 'Kesal' },
+                    'jealous': { icon: '😒', label: 'Cemburu' },
+                    'guilty': { icon: '😔', label: 'Bersalah' },
+                    'ashamed': { icon: '😞', label: 'Malu' },
+                    'disappointed': { icon: '😞', label: 'Kecewa' },
+                    'hurt': { icon: '🥺', label: 'Sakit Hati' },
+                    'vulnerable': { icon: '🥺', label: 'Rentan' },
+                    'insecure': { icon: '😰', label: 'Tidak Aman' },
+                    'defensive': { icon: '😤', label: 'Defensif' },
+                    'aggressive': { icon: '😠', label: 'Agresif' },
+                    'hostile': { icon: '😡', label: 'Memusuhi' },
+                    'contemptuous': { icon: '😏', label: 'Meremehkan' },
+                    'revolted': { icon: '🤮', label: 'Jijik' },
+                    'appalled': { icon: '😱', label: 'Terkejut' },
+                    'horrified': { icon: '😱', label: 'Ngeri' },
+                    'terrified': { icon: '😨', label: 'Ketakutan' },
+                    'panicked': { icon: '😰', label: 'Panik' },
+                    'hysterical': { icon: '😵', label: 'Histeris' },
+                    'overjoyed': { icon: '🤩', label: 'Sangat Senang' },
+                    'ecstatic': { icon: '🤩', label: 'Ekstasi' },
+                    'elated': { icon: '😊', label: 'Gembira' },
+                    'euphoric': { icon: '🤩', label: 'Euforia' },
+                    'thrilled': { icon: '🤩', label: 'Tergugah' },
+                    'exhilarated': { icon: '🤩', label: 'Bersemangat' },
+                    'jubilant': { icon: '🎉', label: 'Bergembira' },
+                    'triumphant': { icon: '🏆', label: 'Menang' },
+                    'victorious': { icon: '🏆', label: 'Menang' },
+                    'accomplished': { icon: '😌', label: 'Berhasil' },
+                    'fulfilled': { icon: '😊', label: 'Terpenuhi' },
+                    'content': { icon: '😌', label: 'Puas' },
+                    'serene': { icon: '😌', label: 'Tenteram' },
+                    'tranquil': { icon: '😌', label: 'Tenteram' },
+                    'calm': { icon: '😌', label: 'Tenang' },
+                    'relaxed': { icon: '😌', label: 'Santai' },
+                    'at_ease': { icon: '😌', label: 'Nyaman' },
+                    'comfortable': { icon: '😌', label: 'Nyaman' },
+                    'secure': { icon: '😊', label: 'Aman' },
+                    'safe': { icon: '😊', label: 'Aman' },
+                    'protected': { icon: '😊', label: 'Terlindungi' },
+                    'supported': { icon: '🤗', label: 'Didukung' },
+                    'loved': { icon: '🥰', label: 'Dicintai' },
+                    'cherished': { icon: '🥰', label: 'Disayangi' },
+                    'valued': { icon: '😊', label: 'Dihargai' },
+                    'appreciated': { icon: '😊', label: 'Dihargai' },
+                    'respected': { icon: '😊', label: 'Dihormati' },
+                    'admired': { icon: '😊', label: 'Dikagumi' },
+                    'esteemed': { icon: '😊', label: 'Dihormati' },
+                    'honored': { icon: '😊', label: 'Dihormati' },
+                    'revered': { icon: '🙏', label: 'Dihormati' },
+                    'worshiped': { icon: '🙏', label: 'Disembah' },
+                    'adored': { icon: '🥰', label: 'Disembah' },
+                    'idolized': { icon: '🤩', label: 'Dipuja' },
+                    'worshipped': { icon: '🙏', label: 'Disembah' }
+                };
+                
+                const emotion = emotionMap[dominantEmotion[0]] || emotionMap['neutral'];
+                const confidence = Math.round(dominantEmotion[1] * 100);
+                
+                this.primaryEmotion.innerHTML = `
+                    <span class="emotion-icon">${emotion.icon}</span>
+                    <span class="emotion-label">${emotion.label}</span>
+                `;
+                
+                // Update confidence bar
+                if (this.confidenceBar && this.confidenceText) {
+                    this.confidenceBar.style.width = `${confidence}%`;
+                    this.confidenceText.textContent = `${confidence}%`;
+                }
+                
+                // Update mood score (simple calculation)
+                if (this.moodScore) {
+                    const moodScore = Math.round((emotions.happy * 0.4 + emotions.neutral * 0.3 + (1 - emotions.sad - emotions.angry) * 0.3) * 10);
+                    this.moodScore.textContent = `${moodScore}/10`;
+                }
+                
+                // Update stress indicator
+                if (this.stressIndicator) {
+                    const stressLevel = emotions.angry + emotions.sad;
+                    if (stressLevel > 0.7) {
+                        this.stressIndicator.textContent = 'High';
+                        this.stressIndicator.className = 'stress-indicator high';
+                    } else if (stressLevel > 0.4) {
+                        this.stressIndicator.textContent = 'Medium';
+                        this.stressIndicator.className = 'stress-indicator medium';
+                    } else {
+                        this.stressIndicator.textContent = 'Low';
+                        this.stressIndicator.className = 'stress-indicator low';
+                    }
+                }
+                
+                // Update emotion breakdown bars
+                if (this.emotionBars) {
+                    this.emotionBars.innerHTML = '';
+                    
+                    Object.entries(emotions).forEach(([emotion, value]) => {
+                        const percentage = Math.round(value * 100);
+                        const bar = document.createElement('div');
+                        bar.className = 'emotion-bar';
+                        bar.innerHTML = `
+                            <div class="emotion-bar-label">${emotion.charAt(0).toUpperCase() + emotion.slice(1)}</div>
+                            <div class="emotion-bar-container">
+                                <div class="emotion-bar-fill" style="width: ${percentage}%"></div>
+                                <span class="emotion-bar-value">${percentage}%</span>
+                            </div>
+                        `;
+                        this.emotionBars.appendChild(bar);
+                    });
+                }
+            }
+        }
+
         convertFaceApiEmotions(expressions) {
-            // Only return the specified 8 emotions
+            // Convert face-api.js emotions to our format with comprehensive mapping
             return {
                 happy: expressions.happy || 0,
                 sad: expressions.sad || 0,
                 angry: expressions.angry || 0,
                 fearful: expressions.fearful || 0,
-                pleading: 0, // face-api.js does not provide 'pleading', so set to 0 or map if you have a related expression
                 surprised: expressions.surprised || 0,
+                surprise: expressions.surprised || expressions.surprise || 0,
                 disgusted: expressions.disgusted || 0,
-                neutral: expressions.neutral || 0
+                neutral: expressions.neutral || 0,
+                contempt: expressions.contempt || 0,
+                // Map additional emotions that might be detected
+                confused: expressions.confused || 0,
+                anxious: expressions.anxious || expressions.fearful || 0,
+                embarrassed: expressions.embarrassed || 0,
+                proud: expressions.proud || 0,
+                relieved: expressions.relieved || 0,
+                satisfied: expressions.satisfied || expressions.happy || 0,
+                amused: expressions.amused || expressions.happy || 0,
+                inspired: expressions.inspired || 0,
+                determined: expressions.determined || 0,
+                focused: expressions.focused || expressions.neutral || 0,
+                thoughtful: expressions.thoughtful || expressions.neutral || 0,
+                peaceful: expressions.peaceful || expressions.neutral || 0,
+                grateful: expressions.grateful || 0,
+                hopeful: expressions.hopeful || 0,
+                confident: expressions.confident || 0,
+                curious: expressions.curious || 0,
+                worried: expressions.worried || expressions.fearful || 0,
+                frustrated: expressions.frustrated || expressions.angry || 0,
+                lonely: expressions.lonely || expressions.sad || 0,
+                overwhelmed: expressions.overwhelmed || 0,
+                stressed: expressions.stressed || expressions.angry || expressions.fearful || 0,
+                tired: expressions.tired || 0,
+                bored: expressions.bored || expressions.neutral || 0,
+                irritated: expressions.irritated || expressions.angry || 0,
+                jealous: expressions.jealous || 0,
+                guilty: expressions.guilty || expressions.sad || 0,
+                ashamed: expressions.ashamed || expressions.sad || 0,
+                disappointed: expressions.disappointed || expressions.sad || 0,
+                hurt: expressions.hurt || expressions.sad || 0,
+                vulnerable: expressions.vulnerable || expressions.fearful || 0,
+                insecure: expressions.insecure || expressions.fearful || 0,
+                defensive: expressions.defensive || expressions.angry || 0,
+                aggressive: expressions.aggressive || expressions.angry || 0,
+                hostile: expressions.hostile || expressions.angry || 0,
+                contemptuous: expressions.contemptuous || expressions.contempt || 0,
+                revolted: expressions.revolted || expressions.disgusted || 0,
+                appalled: expressions.appalled || expressions.surprised || 0,
+                horrified: expressions.horrified || expressions.fearful || 0,
+                terrified: expressions.terrified || expressions.fearful || 0,
+                panicked: expressions.panicked || expressions.fearful || 0,
+                hysterical: expressions.hysterical || 0,
+                overjoyed: expressions.overjoyed || expressions.happy || 0,
+                ecstatic: expressions.ecstatic || expressions.happy || 0,
+                elated: expressions.elated || expressions.happy || 0,
+                euphoric: expressions.euphoric || expressions.happy || 0,
+                thrilled: expressions.thrilled || expressions.happy || 0,
+                exhilarated: expressions.exhilarated || expressions.happy || 0,
+                jubilant: expressions.jubilant || expressions.happy || 0,
+                triumphant: expressions.triumphant || expressions.happy || 0,
+                victorious: expressions.victorious || expressions.happy || 0,
+                accomplished: expressions.accomplished || expressions.happy || 0,
+                fulfilled: expressions.fulfilled || expressions.happy || 0,
+                content: expressions.content || expressions.neutral || 0,
+                serene: expressions.serene || expressions.neutral || 0,
+                tranquil: expressions.tranquil || expressions.neutral || 0,
+                calm: expressions.calm || expressions.neutral || 0,
+                relaxed: expressions.relaxed || expressions.neutral || 0,
+                at_ease: expressions.at_ease || expressions.neutral || 0,
+                comfortable: expressions.comfortable || expressions.neutral || 0,
+                secure: expressions.secure || expressions.neutral || 0,
+                safe: expressions.safe || expressions.neutral || 0,
+                protected: expressions.protected || expressions.neutral || 0,
+                supported: expressions.supported || 0,
+                loved: expressions.loved || expressions.happy || 0,
+                cherished: expressions.cherished || expressions.happy || 0,
+                valued: expressions.valued || expressions.happy || 0,
+                appreciated: expressions.appreciated || expressions.happy || 0,
+                respected: expressions.respected || 0,
+                admired: expressions.admired || expressions.happy || 0,
+                esteemed: expressions.esteemed || 0,
+                honored: expressions.honored || 0,
+                revered: expressions.revered || 0,
+                worshiped: expressions.worshiped || 0,
+                adored: expressions.adored || expressions.happy || 0,
+                idolized: expressions.idolized || expressions.happy || 0,
+                worshipped: expressions.worshipped || 0
             };
         }
 
@@ -1271,9 +1658,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
                         if (errorMessage) errorMessage.style.display = 'block';
                         return;
                     }
-                    const detections = await faceapi.detectSingleFace(this.videoElement, new faceapi.TinyFaceDetectorOptions())
-                        .withFaceLandmarks()
-                        .withFaceExpressions();
+                    const detections = await faceapi.detectSingleFace(this.videoElement, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions().withFaceLandmarks();
                     const ctx = this.canvasElement.getContext('2d');
                     ctx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
                     if (detections) {
@@ -1319,7 +1704,6 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
                 sad: { icon: '😢', label: 'Sedih' },
                 angry: { icon: '😠', label: 'Marah' },
                 fearful: { icon: '😨', label: 'Takut' },
-                pleading: { icon: '🥺', label: 'Memohon' },
                 surprised: { icon: '😲', label: 'Terkejut' },
                 disgusted: { icon: '🤢', label: 'Jijik' },
                 neutral: { icon: '😐', label: 'Netral' },

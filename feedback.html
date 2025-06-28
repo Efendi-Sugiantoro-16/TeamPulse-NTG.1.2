@@ -2,144 +2,340 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
-    <meta name="theme-color" content="#2c3e50">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feedback - TeamPulse</title>
-    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/feedback.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <!-- Mobile Menu Toggle -->
-    <button class="menu-toggle" id="menuToggle">
-        <i class="fas fa-bars"></i>
-    </button>
-
-    <!-- Sidebar Overlay for Mobile -->
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
     <div class="dashboard-container">
-        <aside class="sidebar" id="sidebar">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar">
             <div class="sidebar-header">
                 <h2>TeamPulse</h2>
-                <button class="sidebar-close" id="sidebarClose">
+                <button id="sidebarClose" class="sidebar-close" aria-label="Close sidebar">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <nav>
                 <ul>
-                    <li><a href="dashboard.html"><i class="fas fa-chart-line"></i>Dashboard</a></li>
-                    <li><a href="emotion-input.html"><i class="fas fa-face-smile"></i>Emotion Input</a></li>
+                    <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
+                    <li><a href="emotion-input.html"><i class="fas fa-camera"></i>Emotion Input</a></li>
                     <li><a href="history.html"><i class="fas fa-history"></i>History</a></li>
                     <li><a href="feedback.html" class="active"><i class="fas fa-comments"></i>Feedback</a></li>
-                    <li><a href="settings.html"><i class="fas fa-gear"></i>Settings</a></li>
+                    <li><a href="settings.html"><i class="fas fa-cog"></i>Settings</a></li>
+                    <li><a href="index.html"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
                 </ul>
             </nav>
         </aside>
 
-        <main class="main-content">
-            <div class="section-header">
-                <h2>Feedback</h2>
-                <p>Share your experience and view team feedback</p>
-            </div>
+        <!-- Mobile Menu Toggle -->
+        <button id="menuToggle" class="menu-toggle" aria-label="Toggle navigation menu">
+            <i class="fas fa-bars"></i>
+        </button>
 
-            <div class="feedback-tabs">
-                <button class="tab-btn active" data-tab="give-feedback">Give Feedback</button>
-                <button class="tab-btn" data-tab="view-feedback">View Feedback</button>
-            </div>
+        <!-- Sidebar Overlay -->
+        <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
-            <div class="tab-content active" id="give-feedback">
-                <div class="feedback-form">
-                    <h3>Rate Your Experience</h3>
-                    <div class="rating">
-                        <input type="radio" name="rating" id="rate1" value="1">
-                        <label for="rate1">1</label>
-                        <input type="radio" name="rating" id="rate2" value="2">
-                        <label for="rate2">2</label>
-                        <input type="radio" name="rating" id="rate3" value="3">
-                        <label for="rate3">3</label>
-                        <input type="radio" name="rating" id="rate4" value="4">
-                        <label for="rate4">4</label>
-                        <input type="radio" name="rating" id="rate5" value="5">
-                        <label for="rate5">5</label>
+        <!-- Main Content Area -->
+        <div class="content-area">
+            <div class="main-content">
+                <!-- Section Header -->
+                <div class="section-header">
+                    <h2>Team Feedback & Communication</h2>
+                    <p>Share feedback and insights with your team members</p>
+                </div>
+
+                <!-- Feedback Stats -->
+                <div class="feedback-stats">
+                    <div class="grid grid-cols-4">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-comments"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3>Total Feedback</h3>
+                                <div class="stat-value" id="totalFeedback">156</div>
+                                <div class="stat-change positive">+8 this week</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-thumbs-up"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3>Positive Feedback</h3>
+                                <div class="stat-value" id="positiveFeedback">89%</div>
+                                <div class="stat-change positive">+5% from last month</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3>Response Time</h3>
+                                <div class="stat-value" id="responseTime">2.3h</div>
+                                <div class="stat-change positive">-0.5h average</div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-content">
+                                <h3>Active Members</h3>
+                                <div class="stat-value" id="activeMembers">12</div>
+                                <div class="stat-change">Team size</div>
+                            </div>
+                        </div>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <label for="feedbackType">Type of Feedback</label>
-                        <select id="feedbackType">
-                            <option value="general">General Experience</option>
-                            <option value="emotion">Emotion Detection</option>
-                            <option value="interface">User Interface</option>
-                            <option value="suggestions">Suggestions</option>
-                        </select>
+                <!-- Feedback Actions -->
+                <div class="feedback-actions">
+                    <div class="grid grid-cols-2">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Send Feedback</h3>
+                            </div>
+                            <div class="card-body">
+                                <form id="feedbackForm" class="feedback-form">
+                                    <div class="form-group">
+                                        <label for="feedbackType" class="form-label">Feedback Type</label>
+                                        <select id="feedbackType" class="form-select" required>
+                                            <option value="">Select type...</option>
+                                            <option value="appreciation">Appreciation</option>
+                                            <option value="suggestion">Suggestion</option>
+                                            <option value="concern">Concern</option>
+                                            <option value="question">Question</option>
+                                            <option value="general">General</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="feedbackRecipient" class="form-label">Recipient</label>
+                                        <select id="feedbackRecipient" class="form-select" required>
+                                            <option value="">Select recipient...</option>
+                                            <option value="team">Entire Team</option>
+                                            <option value="john">John Doe</option>
+                                            <option value="jane">Jane Smith</option>
+                                            <option value="mike">Mike Johnson</option>
+                                            <option value="sarah">Sarah Wilson</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="feedbackSubject" class="form-label">Subject</label>
+                                        <input type="text" id="feedbackSubject" class="form-input" placeholder="Brief subject line..." required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="feedbackMessage" class="form-label">Message</label>
+                                        <textarea id="feedbackMessage" class="form-textarea" rows="6" placeholder="Share your feedback, thoughts, or suggestions..." required></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="feedbackPriority" class="form-label">Priority</label>
+                                        <select id="feedbackPriority" class="form-select">
+                                            <option value="low">Low</option>
+                                            <option value="medium" selected>Medium</option>
+                                            <option value="high">High</option>
+                                            <option value="urgent">Urgent</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-paper-plane"></i>
+                                            Send Feedback
+                                        </button>
+                                        <button type="button" id="saveDraft" class="btn btn-outline">
+                                            <i class="fas fa-save"></i>
+                                            Save Draft
+                                        </button>
+                                        <button type="reset" class="btn btn-outline">
+                                            <i class="fas fa-eraser"></i>
+                                            Clear Form
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Quick Actions</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="quick-actions">
+                                    <button class="btn btn-primary" id="teamMeeting">
+                                        <i class="fas fa-users"></i>
+                                        Schedule Team Meeting
+                                    </button>
+                                    <button class="btn btn-secondary" id="oneOnOne">
+                                        <i class="fas fa-user-friends"></i>
+                                        Request 1-on-1
+                                    </button>
+                                    <button class="btn btn-outline" id="anonymousFeedback">
+                                        <i class="fas fa-user-secret"></i>
+                                        Anonymous Feedback
+                                    </button>
+                                    <button class="btn btn-outline" id="feedbackTemplate">
+                                        <i class="fas fa-file-alt"></i>
+                                        Use Template
+                                    </button>
+                                </div>
+                                <div class="feedback-tips">
+                                    <h4>Feedback Tips</h4>
+                                    <ul>
+                                        <li>Be specific and constructive</li>
+                                        <li>Focus on behavior, not personality</li>
+                                        <li>Provide actionable suggestions</li>
+                                        <li>Use a respectful and positive tone</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <label for="feedbackComment">Your Comments</label>
-                        <textarea id="feedbackComment" rows="5" placeholder="Share your thoughts..."></textarea>
+                <!-- Recent Feedback -->
+                <div class="recent-feedback">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Recent Feedback</h3>
+                            <div class="header-actions">
+                                <button id="refreshFeedback" class="btn btn-sm btn-outline">
+                                    <i class="fas fa-sync-alt"></i>
+                                    Refresh
+                                </button>
+                                <button id="filterFeedback" class="btn btn-sm btn-outline">
+                                    <i class="fas fa-filter"></i>
+                                    Filter
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="feedback-list" id="feedbackList">
+                                <!-- Feedback Item 1 -->
+                                <div class="feedback-item">
+                                    <div class="feedback-header">
+                                        <div class="feedback-meta">
+                                            <div class="feedback-author">
+                                                <img src="https://via.placeholder.com/40" alt="John Doe" class="author-avatar">
+                                                <div class="author-info">
+                                                    <div class="author-name">John Doe</div>
+                                                    <div class="feedback-date">2 hours ago</div>
+                                                </div>
+                                            </div>
+                                            <div class="feedback-type appreciation">
+                                                <i class="fas fa-heart"></i>
+                                                Appreciation
+                                            </div>
+                                        </div>
+                                        <div class="feedback-priority medium">Medium</div>
+                                    </div>
+                                    <div class="feedback-content">
+                                        <h4>Great work on the project presentation!</h4>
+                                        <p>I really appreciate how well you prepared for today's client meeting. The presentation was clear, professional, and addressed all their concerns. Your attention to detail made a huge difference.</p>
+                                    </div>
+                                    <div class="feedback-actions">
+                                        <button class="btn btn-sm btn-outline">
+                                            <i class="fas fa-reply"></i>
+                                            Reply
+                                        </button>
+                                        <button class="btn btn-sm btn-outline">
+                                            <i class="fas fa-thumbs-up"></i>
+                                            Like
+                                        </button>
+                                        <button class="btn btn-sm btn-outline">
+                                            <i class="fas fa-share"></i>
+                                            Share
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Feedback Item 2 -->
+                                <div class="feedback-item">
+                                    <div class="feedback-header">
+                                        <div class="feedback-meta">
+                                            <div class="feedback-author">
+                                                <img src="https://via.placeholder.com/40" alt="Jane Smith" class="author-avatar">
+                                                <div class="author-info">
+                                                    <div class="author-name">Jane Smith</div>
+                                                    <div class="feedback-date">1 day ago</div>
+                                                </div>
+                                            </div>
+                                            <div class="feedback-type suggestion">
+                                                <i class="fas fa-lightbulb"></i>
+                                                Suggestion
+                                            </div>
+                                        </div>
+                                        <div class="feedback-priority low">Low</div>
+                                    </div>
+                                    <div class="feedback-content">
+                                        <h4>Process improvement suggestion</h4>
+                                        <p>I think we could improve our weekly standup meetings by adding a quick mood check at the beginning. This could help us better understand team dynamics and address any concerns early.</p>
+                                    </div>
+                                    <div class="feedback-actions">
+                                        <button class="btn btn-sm btn-outline">
+                                            <i class="fas fa-reply"></i>
+                                            Reply
+                                        </button>
+                                        <button class="btn btn-sm btn-outline">
+                                            <i class="fas fa-thumbs-up"></i>
+                                            Like
+                                        </button>
+                                        <button class="btn btn-sm btn-outline">
+                                            <i class="fas fa-share"></i>
+                                            Share
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Feedback Item 3 -->
+                                <div class="feedback-item">
+                                    <div class="feedback-header">
+                                        <div class="feedback-meta">
+                                            <div class="feedback-author">
+                                                <img src="https://via.placeholder.com/40" alt="Mike Johnson" class="author-avatar">
+                                                <div class="author-info">
+                                                    <div class="author-name">Mike Johnson</div>
+                                                    <div class="feedback-date">3 days ago</div>
+                                                </div>
+                                            </div>
+                                            <div class="feedback-type concern">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                                Concern
+                                            </div>
+                                        </div>
+                                        <div class="feedback-priority high">High</div>
+                                    </div>
+                                    <div class="feedback-content">
+                                        <h4>Workload distribution concern</h4>
+                                        <p>I've noticed that some team members are consistently working overtime while others seem to have lighter workloads. Could we discuss this in our next team meeting to ensure fair distribution?</p>
+                                    </div>
+                                    <div class="feedback-actions">
+                                        <button class="btn btn-sm btn-outline">
+                                            <i class="fas fa-reply"></i>
+                                            Reply
+                                        </button>
+                                        <button class="btn btn-sm btn-outline">
+                                            <i class="fas fa-thumbs-up"></i>
+                                            Like
+                                        </button>
+                                        <button class="btn btn-sm btn-outline">
+                                            <i class="fas fa-share"></i>
+                                            Share
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-
-                    <button id="submitFeedback" class="submit-btn">Submit Feedback</button>
                 </div>
             </div>
-
-            <div class="tab-content" id="view-feedback">
-                <div class="feedback-list">
-                    <!-- Feedback items will be dynamically added here -->
-                </div>
-            </div>
-        </main>
+        </div>
     </div>
 
-    <script src="js/feedbackManager.js"></script>
+    <!-- Scripts -->
+    <script src="js/sidebar.js"></script>
     <script src="js/feedback.js"></script>
-    <script>
-        // Mobile menu functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const menuToggle = document.getElementById('menuToggle');
-            const sidebar = document.getElementById('sidebar');
-            const sidebarOverlay = document.getElementById('sidebarOverlay');
-            const sidebarClose = document.getElementById('sidebarClose');
-
-            function openMobileMenu() {
-                sidebar.classList.add('active');
-                sidebarOverlay.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            }
-
-            function closeMobileMenu() {
-                sidebar.classList.remove('active');
-                sidebarOverlay.classList.remove('active');
-                document.body.style.overflow = '';
-            }
-
-            if (menuToggle) {
-                menuToggle.addEventListener('click', openMobileMenu);
-            }
-
-            if (sidebarClose) {
-                sidebarClose.addEventListener('click', closeMobileMenu);
-            }
-
-            if (sidebarOverlay) {
-                sidebarOverlay.addEventListener('click', closeMobileMenu);
-            }
-
-            // Close menu when clicking on navigation links
-            const navLinks = sidebar.querySelectorAll('nav a');
-            navLinks.forEach(link => {
-                link.addEventListener('click', closeMobileMenu);
-            });
-
-            // Handle window resize
-            window.addEventListener('resize', () => {
-                if (window.innerWidth > 991) {
-                    closeMobileMenu();
-                }
-            });
-        });
-    </script>
 </body>
 </html>
