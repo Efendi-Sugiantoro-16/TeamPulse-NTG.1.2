@@ -33,6 +33,10 @@ app.get('/emotion-input', (req, res) => {
     res.sendFile(path.join(__dirname, 'emotion-input.html'));
 });
 
+app.get('/login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'login.html'));
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Error:', err);
@@ -55,6 +59,8 @@ sequelize.sync().then(() => {
     const PORT = process.env.PORT || 8080;
     app.listen(PORT, () => {
         console.log(`🚀 TeamPulse server running on port ${PORT}`);
+        console.log(`🔗 Home: http://localhost:${PORT}`);
+        console.log(`🔗 Login: http://localhost:${PORT}/login`);
         console.log(`📊 Dashboard: http://localhost:${PORT}/dashboard`);
         console.log(`🎭 Emotion Input: http://localhost:${PORT}/emotion-input`);
         console.log(`🔗 API Base: http://localhost:${PORT}/api`);
@@ -66,6 +72,8 @@ sequelize.sync().then(() => {
     const PORT = process.env.PORT || 8080;
     app.listen(PORT, () => {
         console.log(`🚀 TeamPulse server running on port ${PORT} (offline mode)`);
+        console.log(`🔗 Home: http://localhost:${PORT}`);
+        console.log(`🔗 Login: http://localhost:${PORT}/login`);
         console.log(`📊 Dashboard: http://localhost:${PORT}/dashboard`);
         console.log(`🎭 Emotion Input: http://localhost:${PORT}/emotion-input`);
         console.log(`🔗 API Base: http://localhost:${PORT}/api`);
