@@ -11,6 +11,7 @@ class Dashboard {
         this.charts = {};
         this.storage = null;
         this.isLoading = false;
+        this.chartType = 'bar'; // default
         // BroadcastChannel listener untuk realtime update
         if ('BroadcastChannel' in window) {
             this.channel = new BroadcastChannel('emotion-data');
@@ -133,6 +134,15 @@ class Dashboard {
 
         // Auto refresh every 30 seconds
         setInterval(() => this.refreshData(), 30000);
+
+        // Tambahkan event listener untuk chart type selector
+        const chartTypeSelector = document.getElementById('chartTypeSelector');
+        if (chartTypeSelector) {
+            chartTypeSelector.addEventListener('change', (e) => {
+                this.chartType = e.target.value;
+                this.renderEmotionDistributionChart();
+            });
+        }
     }
 
     async loadData() {
@@ -208,6 +218,7 @@ class Dashboard {
         this.renderActivityFeed();
         this.renderStorageStatus();
         this.renderRecentSummary();
+        this.renderEmotionDistributionChart();
         this.showSuccess('Data refreshed successfully');
     }
 
@@ -436,196 +447,104 @@ class Dashboard {
 
         // Get recent entries for chart
         const recentEntries = this.data.slice(0, 10);
-        
+        if (recentEntries.length === 0) return;
+
         // Count emotions
         const emotionCounts = {};
-        const emotionConfidences = {};
-        
         recentEntries.forEach(entry => {
             const emotion = entry.dominantEmotion || entry.emotion || 'unknown';
             emotionCounts[emotion] = (emotionCounts[emotion] || 0) + 1;
-            
-            if (!emotionConfidences[emotion]) {
-                emotionConfidences[emotion] = [];
-            }
-            emotionConfidences[emotion].push(entry.confidence || 0);
         });
-
-        // Calculate average confidence for each emotion
-        const avgConfidences = {};
-        Object.keys(emotionConfidences).forEach(emotion => {
-            const confidences = emotionConfidences[emotion];
-            avgConfidences[emotion] = confidences.reduce((a, b) => a + b, 0) / confidences.length;
-        });
-
         const emotions = Object.keys(emotionCounts);
         const counts = emotions.map(emotion => emotionCounts[emotion]);
-        const avgConf = emotions.map(emotion => avgConfidences[emotion] || 0);
+        const total = recentEntries.length;
+        const avgEmotions = counts.map(count => (count / total) * 100); // proporsi emosi dalam %
 
-        // Color mapping for emotions with gradients
+        // Color mapping for emotions
         const emotionColors = {
-            'happy': {
-                primary: '#FFD700',
-                gradient: ['#FFD700', '#FFA500']
-            },
-            'sad': {
-                primary: '#4169E1',
-                gradient: ['#4169E1', '#1E90FF']
-            },
-            'angry': {
-                primary: '#DC143C',
-                gradient: ['#DC143C', '#FF4500']
-            },
-            'neutral': {
-                primary: '#808080',
-                gradient: ['#808080', '#A9A9A9']
-            },
-            'surprise': {
-                primary: '#FF69B4',
-                gradient: ['#FF69B4', '#FF1493']
-            },
-            'fear': {
-                primary: '#8B4513',
-                gradient: ['#8B4513', '#A0522D']
-            },
-            'disgust': {
-                primary: '#228B22',
-                gradient: ['#228B22', '#32CD32']
-            },
-            'unknown': {
-                primary: '#A9A9A9',
-                gradient: ['#A9A9A9', '#C0C0C0']
-            }
+            'happy': '#10b981',
+            'sad': '#3b82f6',
+            'angry': '#ef4444',
+            'fear': '#f59e0b',
+            'surprise': '#8b5cf6',
+            'disgust': '#059669',
+            'neutral': '#6b7280',
+            'unknown': '#9ca3af'
         };
+        const bgColors = emotions.map(emotion => emotionColors[emotion] || '#9ca3af');
 
-        const colors = emotions.map(emotion => {
-            const colorSet = emotionColors[emotion] || emotionColors.unknown;
-            return colorSet.primary;
-        });
-
-        // Create gradient backgrounds
-        const gradients = colors.map((color, index) => {
-            const canvas = ctx;
-            const gradient = canvas.getContext('2d').createLinearGradient(0, 0, 0, 400);
-            const colorSet = emotionColors[emotions[index]] || emotionColors.unknown;
-            gradient.addColorStop(0, colorSet.gradient[0]);
-            gradient.addColorStop(1, colorSet.gradient[1]);
-            return gradient;
-        });
-
-        this.charts.emotionDistribution = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: emotions.map(emotion => this.capitalizeFirst(emotion)),
-                datasets: [
-                    {
-                        label: 'Jumlah Entries',
+        if (this.chartType === 'pie') {
+            this.charts.emotionDistribution = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: emotions,
+                    datasets: [{
                         data: counts,
-                        backgroundColor: gradients,
-                        borderColor: colors.map(color => this.adjustBrightness(color, -20)),
-                        borderWidth: 2,
-                        borderRadius: {
-                            topLeft: 8,
-                            topRight: 8,
-                            bottomLeft: 0,
-                            bottomRight: 0
-                        },
-                        borderSkipped: false,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: 'Rata-rata Confidence',
-                        data: avgConf,
-                        type: 'line',
-                        borderColor: '#FF6B6B',
-                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
-                        borderWidth: 4,
-                        pointBackgroundColor: '#FF6B6B',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 3,
-                        pointRadius: 8,
-                        pointHoverRadius: 12,
-                        yAxisID: 'y1',
-                        tension: 0.4,
-                        fill: true
+                        backgroundColor: bgColors,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: { enabled: true }
                     }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: '📊 Distribusi Emosi & Confidence (10 Entries Terbaru)',
-                        font: {
-                            size: 18,
-                            weight: 'bold'
+                }
+            });
+        } else {
+            // Bar chart: jumlah emosi & rata-rata emosi (%)
+            this.charts.emotionDistribution = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: emotions,
+                    datasets: [
+                        {
+                            label: 'Jumlah Emosi',
+                            data: counts,
+                            backgroundColor: bgColors,
+                            yAxisID: 'y',
                         },
-                        color: '#333',
-                        padding: 20
-                    },
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            usePointStyle: true,
-                            padding: 20,
-                            font: {
-                                size: 12
+                        {
+                            label: 'Rata-rata Emosi (%)',
+                            data: avgEmotions,
+                            backgroundColor: 'rgba(59,130,246,0.2)',
+                            borderColor: '#3b82f6',
+                            type: 'line',
+                            yAxisID: 'y1',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.dataset.label === 'Jumlah Emosi') {
+                                        return `${context.dataset.label}: ${context.parsed.y}`;
+                                    } else if (context.dataset.label === 'Rata-rata Emosi (%)') {
+                                        return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}%`;
+                                    }
+                                    return context.label;
+                                }
                             }
                         }
                     },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        titleColor: '#fff',
-                        bodyColor: '#fff',
-                        borderColor: '#FF6B6B',
-                        borderWidth: 1
-                    }
-                },
-                scales: {
-                    y: {
-                        type: 'linear',
-                        display: true,
-                        position: 'left',
-                        title: {
-                            display: true,
-                            text: 'Jumlah Entries'
-                        },
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.1)'
-                        }
-                    },
-                    y1: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
-                        title: {
-                            display: true,
-                            text: 'Confidence Score'
-                        },
-                        grid: {
-                            drawOnChartArea: false
-                        },
-                        min: 0,
-                        max: 1
-                    },
-                    x: {
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.1)'
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Jumlah' } },
+                        y1: {
+                            beginAtZero: true,
+                            position: 'right',
+                            title: { display: true, text: 'Rata-rata Emosi (%)' },
+                            grid: { drawOnChartArea: false },
+                            min: 0,
+                            max: 100
                         }
                     }
-                },
-                interaction: {
-                    mode: 'nearest',
-                    axis: 'x',
-                    intersect: false
                 }
-            }
-        });
+            });
+        }
     }
 
     renderTimeAnalysisChart() {

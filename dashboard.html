@@ -151,14 +151,20 @@
             <!-- Charts Section -->
             <div class="charts-section">
                 <div class="chart-container">
-                    <h3><i class="fas fa-chart-bar"></i> Distribusi Emosi (10 Entries Terbaru)</h3>
+                    <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3><i class="fas fa-chart-bar"></i> Distribusi Emosi (10 Entries Terbaru)</h3>
+                        <select id="chartTypeSelector" class="chart-type-selector">
+                            <option value="bar">Bar Chart</option>
+                            <option value="pie">Pie Chart</option>
+                        </select>
+                    </div>
                     <div class="chart-wrapper">
                         <canvas id="emotionDistributionChart"></canvas>
                     </div>
                     <div class="chart-info">
                         <p class="text-secondary text-center mt-2">
                             <i class="fas fa-info-circle"></i> 
-                            Grafik menampilkan distribusi emosi dan rata-rata confidence dari 10 entries terbaru
+                            Pilih jenis grafik untuk melihat distribusi emosi dari 10 entries terbaru
                         </p>
                     </div>
                 </div>

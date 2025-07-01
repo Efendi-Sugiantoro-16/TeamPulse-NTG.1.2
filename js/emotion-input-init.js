@@ -155,4 +155,7 @@ function showError(message) {
     showNotification(message, 'error');
 }
 
+// === CAMERA SNAPSHOT LOGIC ===
+// (Dihapus, sekarang ditangani oleh EmotionController)
+
 // ... END emotion-input-init.js ... 

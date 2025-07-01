@@ -89,6 +89,9 @@
                 <button class="tab-btn" data-tab="text">
                     <i class="fas fa-keyboard"></i> AI Text Analysis
                 </button>
+                <button class="tab-btn" data-tab="snapshot">
+                    <i class="fas fa-camera-retro"></i> Camera Snapshot
+                </button>
             </div>
             <div class="input-sections">
                 <!-- Camera Analysis Section -->
@@ -103,9 +106,6 @@
                             </button>
                             <button class="btn btn-danger" id="stopCameraBtn" disabled>
                                 <i class="fas fa-stop"></i> Stop Camera
-                            </button>
-                            <button class="btn btn-success" id="captureSnapshotBtn" disabled>
-                                <i class="fas fa-camera-retro"></i> Capture Snapshot
                             </button>
                         </div>
 
@@ -212,6 +212,50 @@
 
                         <div class="ai-analysis-results" id="aiAnalysisResults">
                             <!-- AI analysis results will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Camera Snapshot Section -->
+                <div class="input-section" id="snapshot-section">
+                    <div class="section-content">
+                        <h3>Camera Snapshot</h3>
+                        <p>Ambil foto snapshot emosi dengan kamera. Kamera hanya aktif saat Anda menekan "Start Camera".</p>
+                        <div class="camera-controls">
+                            <button class="btn btn-primary" id="startSnapshotCameraBtn">
+                                <i class="fas fa-camera"></i> Start Camera
+                            </button>
+                            <button class="btn btn-danger" id="stopSnapshotCameraBtn" disabled>
+                                <i class="fas fa-stop"></i> Stop Camera
+                            </button>
+                            <button class="btn btn-success" id="captureSnapshotBtn2" disabled>
+                                <i class="fas fa-camera-retro"></i> Capture Snapshot
+                            </button>
+                        </div>
+                        <div class="camera-status">
+                            <span id="snapshotCameraStatus">Camera not active</span>
+                        </div>
+                        <div class="camera-container">
+                            <video id="snapshotCameraVideo" autoplay muted playsinline style="display:none;"></video>
+                            <canvas id="snapshotCameraCanvas" width="640" height="480" style="display:none;"></canvas>
+                            <img id="snapshotPreview" src="" alt="Snapshot Preview" style="display:none; max-width:100%; margin-top:10px;" />
+                        </div>
+                        <div class="real-time-analysis">
+                            <div class="analysis-item">
+                                <span class="analysis-label">Detected Emotion:</span>
+                                <span class="analysis-value" id="snapshotEmotion">-</span>
+                            </div>
+                            <div class="analysis-item">
+                                <span class="analysis-label">Confidence:</span>
+                                <div class="confidence-meter">
+                                    <div class="confidence-fill" id="snapshotConfidenceMeter"></div>
+                                    <span class="confidence-text">0%</span>
+                                </div>
+                            </div>
+                            <div class="analysis-item">
+                                <span class="analysis-label">Face Detected:</span>
+                                <span class="analysis-value" id="snapshotFaceDetected">No</span>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -10,11 +10,12 @@
     <title>History - TeamPulse</title>
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/sidebar.css">
-    <link rel="stylesheet" href="css/history.css">
+    <!-- <link rel="stylesheet" href="css/history.css"> -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="js/history.js"></script>
-    <script src="js/dataStorage.js"></script>
+    <script src="js/history-new.js"></script>
+    <script src="js/hybridStorage.js"></script>
+    <link rel="stylesheet" href="css/history-new.css">
 </head>
 <body>
     <div class="dashboard-container">
@@ -101,6 +102,10 @@
                                 <i class="fas fa-eraser"></i>
                                 Clear All
                             </button>
+                            <button id="showAllHistory" class="btn btn-success">
+                                <i class="fas fa-list"></i>
+                                Tampilkan Semua
+                            </button>
                             <button id="exportData" class="btn btn-secondary">
                                 <i class="fas fa-download"></i>
                                 Export Data
@@ -108,9 +113,17 @@
                         </div>
                     </div>
 
+                    <!-- Storage Info Section -->
+                    <div id="storageInfo" class="storage-info"></div>
+
+                    <!-- Storage Mode Status -->
+                    <div style="margin-bottom: 10px; text-align: right;">
+                        <span><b>Storage Mode:</b> <span id="storageModeStatus">-</span></span>
+                    </div>
+
                     <!-- Statistics Overview -->
                     <div class="stats-overview">
-                        <div class="grid grid-cols-4">
+                        <div class="grid-cols-4">
                             <div class="stat-card">
                                 <div class="stat-icon">
                                     <i class="fas fa-chart-line"></i>
@@ -186,369 +199,17 @@
                                     </tr>
                                 </thead>
                                 <tbody id="historyTableBody">
-                                    <!-- Sample data rows -->
-                                    <tr>
-                                        <td><input type="checkbox" class="row-checkbox"></td>
-                                        <td>
-                                            <div class="datetime-cell">
-                                                <div class="date">Dec 15, 2024</div>
-                                                <div class="time">09:30 AM</div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="emotion-cell">
-                                                <span class="emotion-icon">😊</span>
-                                                <span class="emotion-label">Happy</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="confidence-cell">
-                                                <div class="progress">
-                                                    <div class="progress-bar" style="width: 92%"></div>
-                                                </div>
-                                                <span>92%</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="input-type camera">
-                                                <i class="fas fa-camera"></i>
-                                                Camera
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="notes-cell">
-                                                Feeling great about the project progress
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="status-badge success">Completed</span>
-                                        </td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button class="btn btn-sm btn-outline" title="View Details">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline" title="Edit">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-danger" title="Delete">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="checkbox" class="row-checkbox"></td>
-                                        <td>
-                                            <div class="datetime-cell">
-                                                <div class="date">Dec 14, 2024</div>
-                                                <div class="time">02:15 PM</div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="emotion-cell">
-                                                <span class="emotion-icon">😐</span>
-                                                <span class="emotion-label">Neutral</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="confidence-cell">
-                                                <div class="progress">
-                                                    <div class="progress-bar" style="width: 78%"></div>
-                                                </div>
-                                                <span>78%</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="input-type audio">
-                                                <i class="fas fa-microphone"></i>
-                                                Audio
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="notes-cell">
-                                                Regular check-in, feeling balanced
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="status-badge success">Completed</span>
-                                        </td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button class="btn btn-sm btn-outline" title="View Details">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline" title="Edit">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-danger" title="Delete">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td><input type="checkbox" class="row-checkbox"></td>
-                                        <td>
-                                            <div class="datetime-cell">
-                                                <div class="date">Dec 13, 2024</div>
-                                                <div class="time">11:45 AM</div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="emotion-cell">
-                                                <span class="emotion-icon">😔</span>
-                                                <span class="emotion-label">Sad</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="confidence-cell">
-                                                <div class="progress">
-                                                    <div class="progress-bar" style="width: 85%"></div>
-                                                </div>
-                                                <span>85%</span>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="input-type text">
-                                                <i class="fas fa-keyboard"></i>
-                                                Text
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="notes-cell">
-                                                Feeling overwhelmed with workload
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="status-badge warning">Needs Review</span>
-                                        </td>
-                                        <td>
-                                            <div class="action-buttons">
-                                                <button class="btn btn-sm btn-outline" title="View Details">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline" title="Edit">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-danger" title="Delete">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                    <!-- Data rows will be rendered here by JS -->
                                 </tbody>
                             </table>
                         </div>
                     </div>
 
                     <!-- Pagination -->
-                    <div class="pagination-container">
-                        <div class="pagination-info">
-                            Showing <span id="startIndex">1</span> to <span id="endIndex">10</span> of <span id="totalItems">1,247</span> entries
-                        </div>
-                        <div class="pagination-controls">
-                            <button class="btn btn-sm btn-outline" id="firstPage" disabled>
-                                <i class="fas fa-angle-double-left"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline" id="prevPage" disabled>
-                                <i class="fas fa-angle-left"></i>
-                            </button>
-                            <div class="page-numbers">
-                                <button class="btn btn-sm btn-primary">1</button>
-                                <button class="btn btn-sm btn-outline">2</button>
-                                <button class="btn btn-sm btn-outline">3</button>
-                                <span class="page-ellipsis">...</span>
-                                <button class="btn btn-sm btn-outline">125</button>
-                            </div>
-                            <button class="btn btn-sm btn-outline" id="nextPage">
-                                <i class="fas fa-angle-right"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline" id="lastPage">
-                                <i class="fas fa-angle-double-right"></i>
-                            </button>
-                        </div>
-                        <div class="pagination-size">
-                            <label for="pageSize">Show:</label>
-                            <select id="pageSize" class="form-select">
-                                <option value="10">10</option>
-                                <option value="25" selected>25</option>
-                                <option value="50">50</option>
-                                <option value="100">100</option>
-                            </select>
-                            <span>entries per page</span>
-                        </div>
-                    </div>
+                    <div id="paginationContainer" class="pagination-container"></div>
                 </div>
             </div>
         </div>
     </div>
-
-    <script>
-        // Initialize HistoryManager
-        if (!window.historyManager) window.historyManager = new window.HistoryManager();
-        const historyManager = window.historyManager;
-        const dataStorage = new window.DataStorage();
-
-        // DOM Elements
-        const totalEntriesEl = document.getElementById('totalEntries');
-        const avgMoodEl = document.getElementById('avgMood');
-        const streakDaysEl = document.getElementById('streakDays');
-        const improvementEl = document.getElementById('improvement');
-        const historyTableBody = document.getElementById('historyTableBody');
-        const dateRange = document.getElementById('dateRange');
-        const emotionFilter = document.getElementById('emotionFilter');
-        const inputType = document.getElementById('inputType');
-        const searchInput = document.getElementById('searchInput');
-        const firstPageBtn = document.getElementById('firstPage');
-        const prevPageBtn = document.getElementById('prevPage');
-        const nextPageBtn = document.getElementById('nextPage');
-        const lastPageBtn = document.getElementById('lastPage');
-        const pageSize = document.getElementById('pageSize');
-
-        let currentPage = 1;
-        const itemsPerPage = 10;
-
-        // Update UI with history data
-        function updateUI(stats) {
-            totalEntriesEl.textContent = stats.totalEntries;
-            avgMoodEl.textContent = stats.avgMood ? stats.avgMood.toFixed(1) + '/10' : 'N/A';
-            streakDaysEl.textContent = stats.streakDays || 'N/A';
-            improvementEl.textContent = stats.improvement ? stats.improvement.toFixed(1) + '%' : 'N/A';
-            updateTable();
-        }
-
-        // Update history table
-        function updateTable() {
-            const filters = {
-                dateRange: dateRange.value,
-                emotion: emotionFilter.value,
-                inputType: inputType.value,
-                searchTerm: searchInput.value
-            };
-
-            const filteredHistory = historyManager.filterHistory(filters);
-            const pageData = historyManager.getHistoryPage(currentPage, itemsPerPage);
-            
-            // Clear table
-            historyTableBody.innerHTML = '';
-
-            // Add rows
-            pageData.entries.forEach(entry => {
-                const row = document.createElement('tr');
-                const dataId = entry.data && entry.data.id ? entry.data.id : '';
-                row.innerHTML = `
-                    <td>${historyManager.formatDate(entry.timestamp)}</td>
-                    <td>${entry.emotion}</td>
-                    <td>${entry.confidence ? entry.confidence.toFixed(1) + '%' : 'N/A'}</td>
-                    <td>${entry.inputType}</td>
-                    <td>${entry.notes}</td>
-                    <td><span class="status ${historyManager.getStatusForAction(entry.action)}">${entry.action}</span></td>
-                    <td>${dataId ? `<button class='delete-btn' data-id='${dataId}'>Delete</button>` : ''}</td>
-                `;
-                historyTableBody.appendChild(row);
-            });
-
-            // Add delete event listeners
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const id = btn.getAttribute('data-id');
-                    if (id) {
-                        await dataStorage.deleteEmotionData(id);
-                        historyManager.addEntry('delete', { id });
-                        updateUI(historyManager.getHistoryStats());
-                    }
-                });
-            });
-
-            // Update pagination
-            updatePagination(pageData.totalPages);
-        }
-
-        // Update pagination controls
-        function updatePagination(totalPages) {
-            firstPageBtn.disabled = currentPage === 1;
-            prevPageBtn.disabled = currentPage === 1;
-            nextPageBtn.disabled = currentPage === totalPages;
-            lastPageBtn.disabled = currentPage === totalPages;
-        }
-
-        // Event listeners
-        dateRange.addEventListener('change', updateTable);
-        emotionFilter.addEventListener('change', updateTable);
-        inputType.addEventListener('change', updateTable);
-        searchInput.addEventListener('input', updateTable);
-
-        firstPageBtn.addEventListener('click', () => {
-            currentPage = 1;
-            updateTable();
-        });
-
-        prevPageBtn.addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
-                updateTable();
-            }
-        });
-
-        nextPageBtn.addEventListener('click', () => {
-            const totalPages = Math.ceil(historyManager.getHistory().length / itemsPerPage);
-            if (currentPage < totalPages) {
-                currentPage++;
-                updateTable();
-            }
-        });
-
-        lastPageBtn.addEventListener('click', () => {
-            currentPage = Math.ceil(historyManager.getHistory().length / itemsPerPage);
-            updateTable();
-        });
-
-        pageSize.addEventListener('change', () => {
-            currentPage = 1;
-            updateTable();
-        });
-
-        // Initialize
-        updateUI(historyManager.getHistoryStats());
-
-        // Mobile menu functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const menuToggle = document.getElementById('menuToggle');
-            const sidebar = document.getElementById('sidebar');
-            const sidebarClose = document.getElementById('sidebarClose');
-
-            function openMobileMenu() {
-                sidebar.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            }
-
-            function closeMobileMenu() {
-                sidebar.classList.remove('active');
-                document.body.style.overflow = '';
-            }
-
-            if (menuToggle) {
-                menuToggle.addEventListener('click', openMobileMenu);
-            }
-
-            if (sidebarClose) {
-                sidebarClose.addEventListener('click', closeMobileMenu);
-            }
-
-            // Close menu when clicking on navigation links
-            const navLinks = sidebar.querySelectorAll('nav a');
-            navLinks.forEach(link => {
-                link.addEventListener('click', closeMobileMenu);
-            });
-
-            // Handle window resize
-            window.addEventListener('resize', () => {
-                if (window.innerWidth > 991) {
-                    closeMobileMenu();
-                }
-            });
-        });
-    </script>
 </body>
 </html>

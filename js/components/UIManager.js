@@ -74,6 +74,18 @@ class UIManager {
         this.elements.exportBtn = document.getElementById('exportBtn');
         this.elements.exportModal = document.getElementById('exportModal');
         
+        // Snapshot elements
+        this.elements.startSnapshotCameraBtn = document.getElementById('startSnapshotCameraBtn');
+        this.elements.stopSnapshotCameraBtn = document.getElementById('stopSnapshotCameraBtn');
+        this.elements.captureSnapshotBtn2 = document.getElementById('captureSnapshotBtn2');
+        this.elements.snapshotCameraStatus = document.getElementById('snapshotCameraStatus');
+        this.elements.snapshotCameraVideo = document.getElementById('snapshotCameraVideo');
+        this.elements.snapshotCameraCanvas = document.getElementById('snapshotCameraCanvas');
+        this.elements.snapshotPreview = document.getElementById('snapshotPreview');
+        this.elements.snapshotEmotion = document.getElementById('snapshotEmotion');
+        this.elements.snapshotConfidenceMeter = document.getElementById('snapshotConfidenceMeter');
+        this.elements.snapshotFaceDetected = document.getElementById('snapshotFaceDetected');
+        
         console.log('UIManager: Elements initialized');
     }
 
@@ -174,12 +186,53 @@ class UIManager {
             }
         });
 
+        // Snapshot controls
+        if (this.elements.startSnapshotCameraBtn) {
+            this.elements.startSnapshotCameraBtn.addEventListener('click', () => {
+                this.emit('startSnapshotCamera');
+            });
+        }
+        if (this.elements.stopSnapshotCameraBtn) {
+            this.elements.stopSnapshotCameraBtn.addEventListener('click', () => {
+                this.emit('stopSnapshotCamera');
+            });
+        }
+        if (this.elements.captureSnapshotBtn2) {
+            this.elements.captureSnapshotBtn2.addEventListener('click', () => {
+                this.emit('captureSnapshot2');
+            });
+        }
+
         console.log('UIManager: Event listeners setup complete');
     }
 
     initializeTabs() {
         // Set initial tab
         this.switchTab('camera');
+        this.clearAllEmotionDisplays();
+    }
+
+    clearAllEmotionDisplays() {
+        // Kosongkan semua tampilan emosi dan confidence
+        if (this.elements.cameraEmotion) this.elements.cameraEmotion.textContent = '-';
+        if (this.elements.cameraConfidenceMeter) {
+            this.elements.cameraConfidenceMeter.style.width = '0%';
+            const confText = this.elements.cameraConfidenceMeter.parentElement?.querySelector('.confidence-text');
+            if (confText) confText.textContent = '0%';
+        }
+        if (this.elements.faceDetected) this.elements.faceDetected.textContent = 'No';
+        if (this.elements.audioEmotion) this.elements.audioEmotion.textContent = '-';
+        if (this.elements.audioConfidenceMeter) {
+            this.elements.audioConfidenceMeter.style.width = '0%';
+            const confText = this.elements.audioConfidenceMeter.parentElement?.querySelector('.confidence-text');
+            if (confText) confText.textContent = '0%';
+        }
+        if (this.elements.voiceQuality) this.elements.voiceQuality.textContent = 'Poor';
+        // Jika ada text analysis, kosongkan juga
+        if (this.elements.aiAnalysisResults) this.elements.aiAnalysisResults.innerHTML = '';
+        if (this.elements.currentEmotion) this.elements.currentEmotion.textContent = '-';
+        if (this.elements.emotionSource) this.elements.emotionSource.textContent = '';
+        if (this.elements.submitDataBtn) this.elements.submitDataBtn.disabled = true;
     }
 
     switchTab(tabName) {
@@ -225,6 +278,17 @@ class UIManager {
         // Text button
         if (this.elements.analyzeTextBtn) {
             this.elements.analyzeTextBtn.disabled = tabName !== 'text';
+        }
+
+        // Snapshot buttons
+        if (this.elements.startSnapshotCameraBtn) {
+            this.elements.startSnapshotCameraBtn.disabled = tabName !== 'snapshot';
+        }
+        if (this.elements.stopSnapshotCameraBtn) {
+            this.elements.stopSnapshotCameraBtn.disabled = tabName !== 'snapshot';
+        }
+        if (this.elements.captureSnapshotBtn2) {
+            this.elements.captureSnapshotBtn2.disabled = tabName !== 'snapshot';
         }
     }
 
@@ -273,6 +337,10 @@ class UIManager {
         
         if (tabName !== 'text') {
             this.clearTextResults();
+        }
+
+        if (tabName !== 'snapshot') {
+            this.updateSnapshotUI('reset');
         }
     }
 
@@ -541,6 +609,57 @@ class UIManager {
         this.eventListeners.clear();
         this.elements = {};
         this.isInitialized = false;
+    }
+
+    // Snapshot UI updates
+    updateSnapshotUI(mode = 'reset', data = {}) {
+        if (mode === 'reset') {
+            this.updateSnapshotStatus('Camera not active');
+            this.updateSnapshotEmotion('-');
+            this.updateSnapshotConfidence(0);
+            this.updateSnapshotFaceDetected('No');
+            if (this.elements.snapshotPreview) {
+                this.elements.snapshotPreview.src = '';
+                this.elements.snapshotPreview.style.display = 'none';
+            }
+            if (this.elements.snapshotCameraVideo) this.elements.snapshotCameraVideo.style.display = 'none';
+            if (this.elements.snapshotCameraCanvas) this.elements.snapshotCameraCanvas.style.display = 'none';
+        } else if (mode === 'active') {
+            this.updateSnapshotStatus('Camera active');
+            if (this.elements.snapshotCameraVideo) this.elements.snapshotCameraVideo.style.display = '';
+            if (this.elements.snapshotCameraCanvas) this.elements.snapshotCameraCanvas.style.display = 'none';
+            if (this.elements.snapshotPreview) this.elements.snapshotPreview.style.display = 'none';
+        } else if (mode === 'preview') {
+            this.updateSnapshotStatus('Snapshot captured');
+            if (this.elements.snapshotCameraVideo) this.elements.snapshotCameraVideo.style.display = 'none';
+            if (this.elements.snapshotCameraCanvas) this.elements.snapshotCameraCanvas.style.display = 'none';
+            if (this.elements.snapshotPreview) this.elements.snapshotPreview.style.display = '';
+            if (data.imgSrc && this.elements.snapshotPreview) this.elements.snapshotPreview.src = data.imgSrc;
+        }
+        // Update emotion/confidence/face if provided
+        if (data.emotion !== undefined) this.updateSnapshotEmotion(data.emotion);
+        if (data.confidence !== undefined) this.updateSnapshotConfidence(data.confidence);
+        if (data.faceDetected !== undefined) this.updateSnapshotFaceDetected(data.faceDetected);
+    }
+
+    updateSnapshotStatus(status) {
+        if (this.elements.snapshotCameraStatus) this.elements.snapshotCameraStatus.textContent = status;
+    }
+
+    updateSnapshotEmotion(emotion) {
+        if (this.elements.snapshotEmotion) this.elements.snapshotEmotion.textContent = emotion;
+    }
+
+    updateSnapshotConfidence(confidence) {
+        if (this.elements.snapshotConfidenceMeter) {
+            this.elements.snapshotConfidenceMeter.style.width = `${confidence * 100}%`;
+            const confText = this.elements.snapshotConfidenceMeter.parentElement?.querySelector('.confidence-text');
+            if (confText) confText.textContent = `${(confidence * 100).toFixed(0)}%`;
+        }
+    }
+
+    updateSnapshotFaceDetected(status) {
+        if (this.elements.snapshotFaceDetected) this.elements.snapshotFaceDetected.textContent = status;
     }
 }
 

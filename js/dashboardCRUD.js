@@ -73,39 +73,15 @@ class DashboardCRUD {
     }
 
     renderData() {
-        this.renderRecentEntries();
+        // this.renderRecentEntries(); // DINONAKTIFKAN AGAR TIDAK BENTROK DENGAN dashboard.js
         this.renderDataManagerTable();
         this.updateStats();
     }
 
-    renderRecentEntries() {
-        const tbody = document.getElementById('recentEntriesBody');
-        if (!tbody) return;
-
-        const recentData = this.currentData
-            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-            .slice(0, 5);
-
-        tbody.innerHTML = recentData.map(entry => `
-            <tr>
-                <td>${this.formatDate(entry.timestamp)}</td>
-                <td>
-                    <span class="emotion-badge ${entry.dominantEmotion}">
-                        ${this.getEmotionIcon(entry.dominantEmotion)} ${entry.dominantEmotion}
-                    </span>
-                </td>
-                <td>${Math.round(entry.confidence * 100)}%</td>
-                <td>
-                    <button class="btn btn-sm" onclick="dashboard.editEntry('${entry.id}')">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-danger" onclick="dashboard.deleteEntry('${entry.id}')">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
-    }
+    // renderRecentEntries() {
+    //     // DINONAKTIFKAN AGAR TIDAK BENTROK DENGAN dashboard.js
+    //     // Fungsi render Recent Entries hanya boleh dijalankan oleh dashboard.js
+    // }
 
     renderDataManagerTable() {
         const tbody = document.getElementById('dataManagerBody');

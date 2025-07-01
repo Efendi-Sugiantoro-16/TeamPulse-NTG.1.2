@@ -3,6 +3,30 @@
  * Handles history page functionality and data management
  */
 
+const emotionChannel = ('BroadcastChannel' in window) ? new BroadcastChannel('emotion-data') : null;
+if (emotionChannel) {
+    emotionChannel.onmessage = (event) => {
+        if (event.data && event.data.type === 'new-emotion') {
+            const currentFilters = getCurrentFilters();
+            loadHistoryData().then(() => {
+                applyCurrentFilters(currentFilters);
+                showNotification('Data emosi baru masuk', 'success');
+                // Scroll ke atas dan highlight baris terbaru
+                setTimeout(() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    const tbody = document.getElementById('historyTableBody');
+                    if (tbody && tbody.firstChild && tbody.firstChild.nodeType === 1) {
+                        tbody.firstChild.classList.add('highlight-new');
+                        setTimeout(() => {
+                            tbody.firstChild.classList.remove('highlight-new');
+                        }, 2000);
+                    }
+                }, 100);
+            });
+        }
+    };
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize history page
     initializeHistory();
@@ -12,6 +36,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load initial data
     loadHistoryData();
+    
+    // Event listener untuk tombol Tampilkan Semua
+    const showAllBtn = document.getElementById('showAllHistory');
+    if (showAllBtn) {
+        showAllBtn.addEventListener('click', showAllHistory);
+    }
 });
 
 function initializeHistory() {
@@ -84,18 +114,69 @@ function setupEventListeners() {
     });
 }
 
-function loadHistoryData() {
-    // Simulate loading data from API
-    console.log('Loading history data...');
-    
-    // Update statistics
-    updateStatistics();
-    
-    // Update table data
-    updateTableData();
-    
-    // Update pagination
-    updatePagination();
+async function loadHistoryData() {
+    // Ambil semua data dari hybridStorage/dataStorage tanpa limit
+    const storage = window.hybridStorage || window.dataStorage;
+    let data = [];
+    let mode = 'local';
+    try {
+        if (storage && typeof storage.getEmotionData === 'function') {
+            data = await storage.getEmotionData({ limit: 10000, sortBy: 'timestamp', sortOrder: 'desc' });
+            if (typeof storage.getStorageMode === 'function') {
+                mode = await storage.getStorageMode();
+            }
+        }
+        // Fallback: jika data bukan array, coba parse manual
+        if (!Array.isArray(data)) {
+            try {
+                data = JSON.parse(data);
+            } catch (e) {
+                console.error('[HISTORY] Data in storage is not valid JSON array:', data);
+                data = [];
+            }
+        }
+        // MIGRASI OTOMATIS: pastikan setiap entry punya field utama
+        let migrated = false;
+        data = data.map(entry => {
+            let changed = false;
+            let dominantEmotion = entry.dominantEmotion || entry.emotion || entry.feeling || entry.mood || 'neutral';
+            let source = entry.source || entry.inputType || entry.type || 'camera';
+            let confidence = (typeof entry.confidence === 'number') ? entry.confidence : (entry.confidence ? parseFloat(entry.confidence) : (entry.score ? parseFloat(entry.score) : 0.8));
+            if (isNaN(confidence) || confidence < 0 || confidence > 1) confidence = 0.8;
+            let timestamp = entry.timestamp || entry.createdAt || entry.date || new Date().toISOString();
+            if (!entry.dominantEmotion) { entry.dominantEmotion = dominantEmotion; changed = true; }
+            if (!entry.source) { entry.source = source; changed = true; }
+            if (!entry.timestamp) { entry.timestamp = timestamp; changed = true; }
+            if (entry.confidence === undefined || entry.confidence === null || isNaN(entry.confidence)) { entry.confidence = confidence; changed = true; }
+            if (changed) migrated = true;
+            return entry;
+        });
+        // Jika ada migrasi, simpan ulang ke localStorage
+        if (migrated && mode === 'local') {
+            try {
+                localStorage.setItem('aiEmotionData', JSON.stringify(data));
+                console.log('[HISTORY] Migrated and fixed data saved to localStorage.');
+            } catch (e) {
+                console.error('[HISTORY] Failed to save migrated data:', e);
+            }
+        }
+    } catch (err) {
+        console.error('[HISTORY] Error loading data from storage:', err);
+        data = [];
+    }
+    console.log('[HISTORY] Data loaded from storage:', data);
+    window._historyData = data;
+    updateStatistics(data);
+    updateTableData(data);
+    // Sembunyikan pagination
+    const pagination = document.querySelector('.pagination-controls');
+    if (pagination) pagination.style.display = 'none';
+    // Update status mode penyimpanan di UI
+    const modeText = mode === 'database' ? 'Database (MySQL)' : 'Local Storage';
+    const el = document.getElementById('storageModeStatus');
+    if (el) el.textContent = modeText;
+    // Update storage info section
+    updateStorageInfo(data, storage);
 }
 
 function applyFilters() {
@@ -243,33 +324,64 @@ function handleAction(event) {
     }
 }
 
-function updateStatistics() {
-    // Update statistics display
-    const stats = {
-        totalEntries: '1,247',
-        avgMood: '7.8/10',
-        streakDays: '15',
-        improvement: '+18%'
-    };
-    
-    Object.keys(stats).forEach(key => {
-        const element = document.getElementById(key);
-        if (element) {
-            element.textContent = stats[key];
-        }
+function updateStatistics(data = window._historyData || []) {
+    // Contoh: total entries
+    const totalEntries = data.length;
+    const el = document.getElementById('totalEntries');
+    if (el) el.textContent = totalEntries;
+    // (Tambahkan statistik lain sesuai kebutuhan)
+}
+
+function updateTableData(data) {
+    const tbody = document.getElementById('historyTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No history data available.</td></tr>';
+        return;
+    }
+    // Pastikan data diurutkan terbaru di atas
+    data.sort((a, b) => new Date(b.timestamp || b.createdAt || b.date || 0) - new Date(a.timestamp || a.createdAt || a.date || 0));
+    data.forEach((entry, idx) => {
+        // Ambil field dari berbagai kemungkinan format data
+        const dateRaw = entry.timestamp || entry.createdAt || entry.date || Date.now();
+        let dateObj;
+        try { dateObj = new Date(dateRaw); } catch { dateObj = new Date(); }
+        const dateStr = dateObj.toLocaleDateString();
+        const timeStr = dateObj.toLocaleTimeString();
+        const emotion = entry.emotion || entry.dominantEmotion || entry.feeling || entry.mood || '-';
+        const confidence = (entry.confidence !== undefined && entry.confidence !== null) ? ((entry.confidence * 100).toFixed(1) + '%') : (entry.score !== undefined ? ((entry.score * 100).toFixed(1) + '%') : '-');
+        const source = entry.source || entry.inputType || entry.type || '-';
+        const notes = entry.notes || entry.comment || entry.text || '';
+        const status = entry.status || entry.state || 'Recorded';
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="checkbox" class="row-checkbox"></td>
+            <td><div class="datetime-cell"><div class="date">${dateStr}</div><div class="time">${timeStr}</div></div></td>
+            <td><div class="emotion-cell"><span class="emotion-icon">${getEmotionIcon(emotion)}</span> <span>${capitalizeFirst(emotion)}</span></div></td>
+            <td>${confidence}</td>
+            <td>${capitalizeFirst(source)}</td>
+            <td>${notes}</td>
+            <td>${status}</td>
+            <td class="action-buttons">
+                <button class="btn btn-sm btn-outline" title="View"><i class="fas fa-eye"></i></button>
+                <button class="btn btn-sm btn-outline" title="Delete"><i class="fas fa-trash"></i></button>
+            </td>
+        `;
+        tbody.appendChild(row);
     });
 }
 
-function updateTableData() {
-    // This would typically fetch data from an API
-    console.log('Updating table data...');
-    
-    // Simulate table update
-    const tableBody = document.getElementById('historyTableBody');
-    if (tableBody) {
-        // Table data is already in HTML, just update any dynamic content
-        console.log('Table data updated');
-    }
+function getEmotionIcon(emotion) {
+    const icons = {
+        happy: '😊', sad: '😢', angry: '😠', neutral: '😐', surprised: '😲', fearful: '😨', disgust: '🤢', excited: '🤩', confused: '😕', '-': '❓'
+    };
+    return icons[emotion?.toLowerCase()] || '❓';
+}
+
+function capitalizeFirst(str) {
+    if (!str) return '';
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 function updatePagination() {
@@ -794,3 +906,70 @@ async function loadHistoryFromBackend() {
 }
 
 // Panggil loadHistoryFromBackend() saat halaman/history siap
+
+// Fungsi bantu untuk mengambil filter/search aktif
+function getCurrentFilters() {
+    return {
+        dateRange: document.getElementById('dateRange')?.value || '',
+        emotionFilter: document.getElementById('emotionFilter')?.value || '',
+        inputType: document.getElementById('inputType')?.value || '',
+        searchTerm: document.getElementById('searchInput')?.value || ''
+    };
+}
+
+// Fungsi bantu untuk menerapkan filter/search setelah reload data
+function applyCurrentFilters(filters) {
+    if (!filters) return;
+    if (document.getElementById('dateRange')) document.getElementById('dateRange').value = filters.dateRange;
+    if (document.getElementById('emotionFilter')) document.getElementById('emotionFilter').value = filters.emotionFilter;
+    if (document.getElementById('inputType')) document.getElementById('inputType').value = filters.inputType;
+    if (document.getElementById('searchInput')) document.getElementById('searchInput').value = filters.searchTerm;
+    // Terapkan filter/search ke tabel
+    if (filters.searchTerm) filterTableRows(filters.searchTerm);
+}
+
+function showAllHistory() {
+    // Clear semua filter
+    if (document.getElementById('dateRange')) document.getElementById('dateRange').value = '365';
+    if (document.getElementById('emotionFilter')) document.getElementById('emotionFilter').value = 'all';
+    if (document.getElementById('inputType')) document.getElementById('inputType').value = 'all';
+    if (document.getElementById('searchInput')) document.getElementById('searchInput').value = '';
+    // Load semua data tanpa filter
+    loadHistoryData();
+}
+
+// Tambahkan CSS highlight di JS jika belum ada
+(function addHighlightStyle() {
+    if (!document.getElementById('highlightNewStyle')) {
+        const style = document.createElement('style');
+        style.id = 'highlightNewStyle';
+        style.innerHTML = `.highlight-new { background: #d1ffe6 !important; transition: background 1s; }`;
+        document.head.appendChild(style);
+    }
+})();
+
+function updateStorageInfo(data, storage) {
+    const el = document.getElementById('storageInfo');
+    if (!el) return;
+    const total = data && Array.isArray(data) ? data.length : 0;
+    let storageType = 'Unknown';
+    let hasAdd = false, hasGet = false, hasDelete = false;
+    if (storage) {
+        if (storage.constructor && storage.constructor.name) {
+            storageType = storage.constructor.name;
+        } else if (storage.storageType) {
+            storageType = storage.storageType;
+        }
+        hasAdd = typeof storage.addEmotionData === 'function' || typeof storage.saveEmotionData === 'function';
+        hasGet = typeof storage.getEmotionData === 'function';
+        hasDelete = typeof storage.deleteEmotionData === 'function';
+    }
+    el.innerHTML = `
+        <b>Storage Info:</b> &nbsp; 
+        <span>Total Entries: <b>${total}</b></span> &nbsp; | &nbsp;
+        <span>Storage Type: <b>${storageType}</b></span> &nbsp; | &nbsp;
+        <span>Add Data: ${hasAdd ? '✅' : '❌'}</span> &nbsp; | &nbsp;
+        <span>Get Data: ${hasGet ? '✅' : '❌'}</span> &nbsp; | &nbsp;
+        <span>Delete Data: ${hasDelete ? '✅' : '❌'}</span>
+    `;
+}

@@ -115,6 +115,11 @@ class EmotionController {
         this.textAnalyzer.on('analysisComplete', (data) => this.handleEmotionDetected(data, 'text'));
         this.textAnalyzer.on('analysisError', (error) => this.handleAnalysisError(error));
         
+        // Snapshot Events
+        this.uiManager.on('startSnapshotCamera', () => this.handleStartSnapshotCamera());
+        this.uiManager.on('stopSnapshotCamera', () => this.handleStopSnapshotCamera());
+        this.uiManager.on('captureSnapshot2', () => this.handleCaptureSnapshot2());
+        
         console.log('EmotionController: Event listeners setup complete');
     }
 
@@ -232,6 +237,14 @@ class EmotionController {
         }
 
         await this.dataManager.saveEmotionData(emotionData);
+
+        // Broadcast ke channel agar history realtime
+        if ('BroadcastChannel' in window) {
+            if (!this._emotionChannel) {
+                this._emotionChannel = new BroadcastChannel('emotion-data');
+            }
+            this._emotionChannel.postMessage({ type: 'new-emotion', entry: emotionData });
+        }
 
         // Update session stats
         this.currentSession.analysisCount++;
@@ -465,6 +478,102 @@ class EmotionController {
     handleAudioStopped() {
         this.uiManager.updateAudioButtonStates(false);
         this.uiManager.updateAudioStatus('Audio analysis stopped');
+    }
+
+    // === SNAPSHOT CAMERA HANDLERS ===
+    async handleStartSnapshotCamera() {
+        try {
+            const video = document.getElementById('snapshotCameraVideo');
+            if (!video) return;
+            this.snapshotStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = this.snapshotStream;
+            video.style.display = '';
+            this.uiManager.updateSnapshotUI('active');
+            document.getElementById('startSnapshotCameraBtn').disabled = true;
+            document.getElementById('stopSnapshotCameraBtn').disabled = false;
+            document.getElementById('captureSnapshotBtn2').disabled = false;
+        } catch (err) {
+            this.uiManager.updateSnapshotStatus('Camera error');
+            this.uiManager.showError('Tidak dapat mengakses kamera: ' + err.message);
+        }
+    }
+
+    handleStopSnapshotCamera() {
+        const video = document.getElementById('snapshotCameraVideo');
+        if (this.snapshotStream) {
+            this.snapshotStream.getTracks().forEach(track => track.stop());
+            this.snapshotStream = null;
+        }
+        if (video) {
+            video.srcObject = null;
+            video.style.display = 'none';
+        }
+        this.uiManager.updateSnapshotUI('reset');
+        document.getElementById('startSnapshotCameraBtn').disabled = false;
+        document.getElementById('stopSnapshotCameraBtn').disabled = true;
+        document.getElementById('captureSnapshotBtn2').disabled = true;
+    }
+
+    async handleCaptureSnapshot2() {
+        const video = document.getElementById('snapshotCameraVideo');
+        const canvas = document.getElementById('snapshotCameraCanvas');
+        if (!video || !canvas) return;
+        // Draw video frame to canvas
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // Hide video, show preview
+        const imgSrc = canvas.toDataURL('image/png');
+        this.uiManager.updateSnapshotUI('preview', { imgSrc });
+        // Analisis emosi dengan face-api.js
+        this.uiManager.updateSnapshotStatus('Menganalisis emosi...');
+        try {
+            await faceapi.nets.tinyFaceDetector.loadFromUri('models/');
+            await faceapi.nets.faceExpressionNet.loadFromUri('models/');
+            const detections = await faceapi.detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
+            if (detections && detections.expressions) {
+                // Cari emosi dominan
+                let maxEmotion = 'neutral';
+                let maxValue = 0;
+                for (const [emo, val] of Object.entries(detections.expressions)) {
+                    if (val > maxValue) {
+                        maxValue = val;
+                        maxEmotion = emo;
+                    }
+                }
+                this.uiManager.updateSnapshotUI('preview', {
+                    emotion: this.capitalizeFirst(maxEmotion),
+                    confidence: maxValue,
+                    faceDetected: 'Yes'
+                });
+                // Tampilkan di AI Detected Emotion utama
+                this.uiManager.updateEmotionDisplay({
+                    emotion: this.capitalizeFirst(maxEmotion),
+                    confidence: maxValue,
+                    source: 'camera_snapshot'
+                });
+            } else {
+                this.uiManager.updateSnapshotUI('preview', {
+                    emotion: '-',
+                    confidence: 0,
+                    faceDetected: 'No'
+                });
+                this.uiManager.updateEmotionDisplay({
+                    emotion: '-',
+                    confidence: 0,
+                    source: 'camera_snapshot'
+                });
+            }
+        } catch (err) {
+            this.uiManager.updateSnapshotStatus('Analisis gagal');
+            this.uiManager.showError('Gagal analisis emosi snapshot: ' + err.message);
+        }
+    }
+
+    capitalizeFirst(str) {
+        if (!str) return '';
+        return str.charAt(0).toUpperCase() + str.slice(1);
     }
 }
 
