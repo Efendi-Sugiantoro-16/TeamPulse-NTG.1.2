@@ -198,23 +198,64 @@ The application uses MySQL with the following default settings:
 1. Navigate to the Emotion Input page
 2. Grant camera/microphone permissions
 3. Choose input method (facial or audio)
-4. Record your current emotional state
-5. Add optional notes
-6. Submit for analysis
 
-### Reports and Analytics
+## 🎥 Emotion Input System
 
-- **Daily Reports**: Summary of daily team emotions
-- **Weekly Trends**: Pattern analysis over time
-- **Team Comparisons**: Cross-team emotional analysis
-- **Export Options**: Download reports in various formats
+The Emotion Input System is a comprehensive AI-powered emotion analysis tool that provides three main analysis methods:
 
-## 🔌 API Documentation
+### Camera Analysis
+- **Real-time Facial Detection**: Uses face-api.js for instant emotion recognition
+- **7 Emotion Categories**: Happy, sad, angry, excited, fearful, surprised, neutral, confused
+- **Confidence Scoring**: Each detection includes a confidence percentage
+- **Snapshot Capture**: Save specific moments for later analysis
 
-### Authentication Endpoints
+### Voice Analysis  
+- **Real-time Voice Monitoring**: Continuous audio level and pattern analysis
+- **Spectrogram Visualization**: Visual representation of voice patterns
+- **Voice Quality Assessment**: Automatic quality evaluation
+- **Audio Recording**: Save voice clips for detailed analysis
 
-#### POST `/api/auth/register`
-Register a new user account.
+### Text Analysis
+- **AI Sentiment Analysis**: Advanced text emotion classification
+- **Keyword Extraction**: Identify emotional keywords in text
+- **Confidence Scoring**: Reliability metrics for each analysis
+- **Multi-language Support**: Analyze text in various languages
+
+### Data Management
+- **Hybrid Storage**: Choose between local browser storage or MySQL database
+- **Offline Support**: Automatic data queuing when database is unavailable
+- **Export Functionality**: Download data in JSON or CSV format with filtering
+- **Real-time History**: View recent analysis results
+
+### Quick Start for Emotion Input
+
+1. **Start Local Server**:
+   ```bash
+   # Windows
+   start-server.bat
+   
+   # Linux/Mac  
+   ./start-server.sh
+   
+   # Manual
+   python -m http.server 8000
+   ```
+
+2. **Access Application**:
+   ```
+   http://localhost:8000/emotion-input.html
+   ```
+
+3. **Grant Permissions**: Allow camera and microphone access
+
+4. **Choose Analysis Method**:
+   - Click "Camera Analysis" for facial detection
+   - Click "Voice Analysis" for audio processing  
+   - Click "AI Text Analysis" for text sentiment
+
+5. **Monitor Results**: View real-time emotion detection and confidence scores
+
+6. **Save Data**: Use "Submit Data" to save analysis results
 
 **Request Body:**
 ```json

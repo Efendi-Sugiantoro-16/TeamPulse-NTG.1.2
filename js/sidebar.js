@@ -23,7 +23,7 @@ class SidebarManager {
         this.sidebar = document.getElementById('sidebar');
         this.menuToggle = document.getElementById('menuToggle');
         this.sidebarOverlay = document.getElementById('sidebarOverlay');
-        this.sidebarClose = document.getElementById('sidebarClose');
+        this.sidebarClose = document.getElementById('sidebarClose') || document.getElementById('sidebarCloseBtn');
         
         if (!this.sidebar) {
             console.warn('Sidebar element not found');

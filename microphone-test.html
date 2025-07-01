@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microphone Test - TeamPulse</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .audio-level-container {
+            background: #2c3e50;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .audio-level-display {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .level-meter {
+            flex: 1;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .level-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #FF9800, #f44336);
+            width: 0%;
+            transition: width 0.1s ease;
+            border-radius: 15px;
+        }
+
+        .level-text {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .audio-status {
+            text-align: center;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .spectrogram-container {
+            background: #2c3e50;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .spectrogram-container h3 {
+            margin: 0 0 15px 0;
+            text-align: center;
+            color: white;
+        }
+
+        #spectrogramCanvas {
+            width: 100%;
+            height: 200px;
+            background: #000;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: block;
+            margin: 0 auto;
+        }
+
+        .spectrogram-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 140px;
+            justify-content: center;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #27ae60;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+        }
+
+        .info-panel {
+            background: #ecf0f1;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .info-panel h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-family: 'Courier New', monospace;
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        .error-message {
+            background: #e74c3c;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message {
+            background: #2ecc71;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎤 Microphone Test</h1>
+            <p>Real-time audio recording with spectrogram visualization</p>
+        </div>
+
+        <div class="content">
+            <!-- Error/Success Messages -->
+            <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="success-message"></div>
+
+            <!-- Audio Level Indicator -->
+            <div class="audio-level-container">
+                <div class="audio-level-display">
+                    <div class="level-meter">
+                        <div class="level-fill" id="audioLevelFill"></div>
+                    </div>
+                    <span class="level-text" id="audioLevelText">-∞ dB</span>
+                </div>
+                <div class="audio-status" id="audioStatus">Click "Start Recording" to begin</div>
+            </div>
+
+            <!-- Real-time Spectrogram -->
+            <div class="spectrogram-container">
+                <h3>Real-time Spectrogram</h3>
+                <canvas id="spectrogramCanvas" width="400" height="200"></canvas>
+                <div class="spectrogram-info">
+                    <span>Frequency (Hz) →</span>
+                    <span>Time →</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <button class="btn btn-primary" id="startRecording">
+                    <i class="fas fa-microphone"></i> Start Recording
+                </button>
+                <button class="btn btn-danger" id="stopRecording" disabled>
+                    <i class="fas fa-stop"></i> Stop Recording
+                </button>
+                <button class="btn btn-success" id="playRecording" disabled>
+                    <i class="fas fa-play"></i> Play Recording
+                </button>
+                <button class="btn btn-secondary" id="downloadRecording" disabled>
+                    <i class="fas fa-download"></i> Download
+                </button>
+            </div>
+
+            <!-- Info Panel -->
+            <div class="info-panel">
+                <h3>Audio Information</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Sample Rate</div>
+                        <div class="info-value" id="sampleRate">44.1 kHz</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">FFT Size</div>
+                        <div class="info-value" id="fftSize">2048</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Recording Status</div>
+                        <div class="info-value" id="recordingStatus">Stopped</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Audio Level</div>
+                        <div class="info-value" id="currentLevel">-∞ dB</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Audio Recorder Script -->
+    <script src="js/audioRecorder.js"></script>
+
+    <script>
+        class MicrophoneTest {
+            constructor() {
+                this.audioRecorder = null;
+                this.isRecording = false;
+                this.recordedAudio = null;
+                
+                this.initialize();
+            }
+
+            async initialize() {
+                try {
+                    console.log('Initializing Microphone Test...');
+                    
+                    this.audioRecorder = new AudioRecorder();
+                    await this.audioRecorder.initialize();
+                    
+                    // Set up callbacks
+                    this.audioRecorder.setCallbacks({
+                        onAudioLevel: (level) => this.updateAudioLevel(level),
+                        onRecordingStart: () => this.onRecordingStart(),
+                        onRecordingStop: () => this.onRecordingStop(),
+                        onRecordingComplete: (audioUrl) => this.onRecordingComplete(audioUrl)
+                    });
+                    
+                    this.setupEventListeners();
+                    this.showSuccess('Microphone test initialized successfully');
+                    
+                    console.log('Microphone Test initialized');
+                } catch (error) {
+                    console.error('Failed to initialize:', error);
+                    this.showError('Failed to initialize microphone: ' + error.message);
+                }
+            }
+
+            setupEventListeners() {
+                document.getElementById('startRecording').addEventListener('click', () => this.startRecording());
+                document.getElementById('stopRecording').addEventListener('click', () => this.stopRecording());
+                document.getElementById('playRecording').addEventListener('click', () => this.playRecording());
+                document.getElementById('downloadRecording').addEventListener('click', () => this.downloadRecording());
+            }
+
+            async startRecording() {
+                try {
+                    await this.audioRecorder.startRecording();
+                    this.isRecording = true;
+                    this.updateRecordingUI();
+                    this.showSuccess('Recording started successfully');
+                } catch (error) {
+                    console.error('Failed to start recording:', error);
+                    this.showError('Failed to start recording: ' + error.message);
+                }
+            }
+
+            stopRecording() {
+                try {
+                    this.audioRecorder.stopRecording();
+                    this.isRecording = false;
+                    this.updateRecordingUI();
+                    this.showSuccess('Recording stopped');
+                } catch (error) {
+                    console.error('Failed to stop recording:', error);
+                    this.showError('Failed to stop recording: ' + error.message);
+                }
+            }
+
+            playRecording() {
+                if (!this.recordedAudio) return;
+                
+                try {
+                    this.audioRecorder.playRecording();
+                    this.showSuccess('Playing recording...');
+                } catch (error) {
+                    this.showError('Failed to play recording: ' + error.message);
+                }
+            }
+
+            downloadRecording() {
+                if (!this.recordedAudio) return;
+                
+                try {
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+                    this.audioRecorder.downloadRecording(`recording-${timestamp}.wav`);
+                    this.showSuccess('Recording downloaded');
+                } catch (error) {
+                    this.showError('Failed to download recording: ' + error.message);
+                }
+            }
+
+            updateAudioLevel(level) {
+                // Update audio level meter
+                const fill = document.getElementById('audioLevelFill');
+                const text = document.getElementById('audioLevelText');
+                const currentLevel = document.getElementById('currentLevel');
+                
+                if (fill) {
+                    const normalizedLevel = Math.max(0, Math.min(100, (level + 60) * 1.67));
+                    fill.style.width = `${normalizedLevel}%`;
+                }
+                
+                if (text) {
+                    text.textContent = `${level.toFixed(1)} dB`;
+                }
+                
+                if (currentLevel) {
+                    currentLevel.textContent = `${level.toFixed(1)} dB`;
+                }
+            }
+
+            onRecordingStart() {
+                this.isRecording = true;
+                this.updateRecordingUI();
+                document.getElementById('audioStatus').textContent = 'Recording...';
+                document.getElementById('recordingStatus').textContent = 'Recording';
+            }
+
+            onRecordingStop() {
+                this.isRecording = false;
+                this.updateRecordingUI();
+                document.getElementById('audioStatus').textContent = 'Recording stopped';
+                document.getElementById('recordingStatus').textContent = 'Stopped';
+            }
+
+            onRecordingComplete(audioUrl) {
+                this.recordedAudio = audioUrl;
+                this.updateRecordingUI();
+                document.getElementById('audioStatus').textContent = 'Recording completed';
+                document.getElementById('recordingStatus').textContent = 'Completed';
+            }
+
+            updateRecordingUI() {
+                const startBtn = document.getElementById('startRecording');
+                const stopBtn = document.getElementById('stopRecording');
+                const playBtn = document.getElementById('playRecording');
+                const downloadBtn = document.getElementById('downloadRecording');
+
+                startBtn.disabled = this.isRecording;
+                stopBtn.disabled = !this.isRecording;
+                playBtn.disabled = !this.recordedAudio;
+                downloadBtn.disabled = !this.recordedAudio;
+            }
+
+            showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                
+                setTimeout(() => {
+                    errorDiv.style.display = 'none';
+                }, 5000);
+            }
+
+            showSuccess(message) {
+                const successDiv = document.getElementById('successMessage');
+                successDiv.textContent = message;
+                successDiv.style.display = 'block';
+                
+                setTimeout(() => {
+                    successDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.microphoneTest = new MicrophoneTest();
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Input System - Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Emotion Input System - Component Test</h1>
+    
+    <div class="test-section">
+        <h2>1. File Dependencies Test</h2>
+        <div id="fileTest"></div>
+        <button onclick="testFiles()">Test Files</button>
+    </div>
+
+    <div class="test-section">
+        <h2>2. JavaScript Libraries Test</h2>
+        <div id="libraryTest"></div>
+        <button onclick="testLibraries()">Test Libraries</button>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Browser Capabilities Test</h2>
+        <div id="browserTest"></div>
+        <button onclick="testBrowser()">Test Browser</button>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Storage Test</h2>
+        <div id="storageTest"></div>
+        <button onclick="testStorage()">Test Storage</button>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Camera/Microphone Test</h2>
+        <div id="mediaTest"></div>
+        <button onclick="testMedia()">Test Media</button>
+    </div>
+
+    <div class="test-section">
+        <h2>6. Full System Test</h2>
+        <div id="systemTest"></div>
+        <button onclick="testSystem()">Test Full System</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Log</h2>
+        <div id="testLog" class="log"></div>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('testLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            logDiv.textContent += logEntry;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function clearLog() {
+            document.getElementById('testLog').textContent = '';
+        }
+
+        function addStatus(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            const status = document.createElement('div');
+            status.className = `status ${type}`;
+            status.textContent = message;
+            container.appendChild(status);
+        }
+
+        function clearStatus(containerId) {
+            document.getElementById(containerId).innerHTML = '';
+        }
+
+        async function testFiles() {
+            clearStatus('fileTest');
+            log('Testing file dependencies...');
+            
+            const files = [
+                'js/tf.min.js',
+                'models/face-api.min.js',
+                'js/meyda.min.js',
+                'js/hybridStorage.js',
+                'js/dataStorage.js',
+                'js/emotion-input.js',
+                'css/emotion-input.css'
+            ];
+
+            for (const file of files) {
+                try {
+                    const response = await fetch(file, { method: 'HEAD' });
+                    if (response.ok) {
+                        addStatus('fileTest', `✅ ${file} - Found`, 'success');
+                        log(`File found: ${file}`);
+                    } else {
+                        addStatus('fileTest', `❌ ${file} - Not found (${response.status})`, 'error');
+                        log(`File not found: ${file} (${response.status})`, 'error');
+                    }
+                } catch (error) {
+                    addStatus('fileTest', `❌ ${file} - Error: ${error.message}`, 'error');
+                    log(`File error: ${file} - ${error.message}`, 'error');
+                }
+            }
+        }
+
+        function testLibraries() {
+            clearStatus('libraryTest');
+            log('Testing JavaScript libraries...');
+            
+            const libraries = [
+                { name: 'TensorFlow.js', check: () => typeof tf !== 'undefined' },
+                { name: 'face-api.js', check: () => typeof faceapi !== 'undefined' },
+                { name: 'Meyda', check: () => typeof Meyda !== 'undefined' },
+                { name: 'HybridStorage', check: () => typeof HybridStorage !== 'undefined' },
+                { name: 'DataStorage', check: () => typeof DataStorage !== 'undefined' },
+                { name: 'EmotionInputController', check: () => typeof EmotionInputController !== 'undefined' }
+            ];
+
+            libraries.forEach(lib => {
+                if (lib.check()) {
+                    addStatus('libraryTest', `✅ ${lib.name} - Loaded`, 'success');
+                    log(`Library loaded: ${lib.name}`);
+                } else {
+                    addStatus('libraryTest', `❌ ${lib.name} - Not loaded`, 'error');
+                    log(`Library not loaded: ${lib.name}`, 'error');
+                }
+            });
+        }
+
+        function testBrowser() {
+            clearStatus('browserTest');
+            log('Testing browser capabilities...');
+            
+            const capabilities = [
+                { name: 'Camera API', check: () => 'getUserMedia' in navigator.mediaDevices },
+                { name: 'Microphone API', check: () => 'getUserMedia' in navigator.mediaDevices },
+                { name: 'localStorage', check: () => 'localStorage' in window },
+                { name: 'Web Workers', check: () => 'Worker' in window },
+                { name: 'Canvas API', check: () => 'getContext' in document.createElement('canvas') },
+                { name: 'Audio Context', check: () => 'AudioContext' in window || 'webkitAudioContext' in window },
+                { name: 'Fetch API', check: () => 'fetch' in window },
+                { name: 'Promise', check: () => 'Promise' in window }
+            ];
+
+            capabilities.forEach(cap => {
+                if (cap.check()) {
+                    addStatus('browserTest', `✅ ${cap.name} - Supported`, 'success');
+                    log(`Capability supported: ${cap.name}`);
+                } else {
+                    addStatus('browserTest', `❌ ${cap.name} - Not supported`, 'error');
+                    log(`Capability not supported: ${cap.name}`, 'error');
+                }
+            });
+        }
+
+        async function testStorage() {
+            clearStatus('storageTest');
+            log('Testing storage capabilities...');
+            
+            try {
+                // Test localStorage
+                localStorage.setItem('test', 'test-value');
+                const testValue = localStorage.getItem('test');
+                localStorage.removeItem('test');
+                
+                if (testValue === 'test-value') {
+                    addStatus('storageTest', '✅ localStorage - Working', 'success');
+                    log('localStorage working');
+                } else {
+                    addStatus('storageTest', '❌ localStorage - Not working', 'error');
+                    log('localStorage not working', 'error');
+                }
+            } catch (error) {
+                addStatus('storageTest', `❌ localStorage - Error: ${error.message}`, 'error');
+                log(`localStorage error: ${error.message}`, 'error');
+            }
+
+            // Test if we can create DataStorage
+            try {
+                if (typeof DataStorage !== 'undefined') {
+                    const dataStorage = new DataStorage();
+                    addStatus('storageTest', '✅ DataStorage - Can instantiate', 'success');
+                    log('DataStorage can be instantiated');
+                } else {
+                    addStatus('storageTest', '❌ DataStorage - Not available', 'error');
+                    log('DataStorage not available', 'error');
+                }
+            } catch (error) {
+                addStatus('storageTest', `❌ DataStorage - Error: ${error.message}`, 'error');
+                log(`DataStorage error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testMedia() {
+            clearStatus('mediaTest');
+            log('Testing camera and microphone...');
+            
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true, 
+                    audio: true 
+                });
+                
+                addStatus('mediaTest', '✅ Camera & Microphone - Access granted', 'success');
+                log('Camera and microphone access granted');
+                
+                // Stop the stream
+                stream.getTracks().forEach(track => track.stop());
+                
+            } catch (error) {
+                addStatus('mediaTest', `❌ Camera & Microphone - ${error.message}`, 'error');
+                log(`Media access error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSystem() {
+            clearStatus('systemTest');
+            log('Testing full system...');
+            
+            try {
+                // Test if EmotionInputController can be instantiated
+                if (typeof EmotionInputController !== 'undefined') {
+                    addStatus('systemTest', '✅ EmotionInputController - Available', 'success');
+                    log('EmotionInputController available');
+                    
+                    // Try to create instance
+                    const controller = new EmotionInputController();
+                    addStatus('systemTest', '✅ EmotionInputController - Can instantiate', 'success');
+                    log('EmotionInputController can be instantiated');
+                    
+                    // Test initialization
+                    try {
+                        await controller.init();
+                        addStatus('systemTest', '✅ System - Initialized successfully', 'success');
+                        log('System initialized successfully');
+                    } catch (error) {
+                        addStatus('systemTest', `⚠️ System - Init error: ${error.message}`, 'warning');
+                        log(`System init error: ${error.message}`, 'warning');
+                    }
+                    
+                } else {
+                    addStatus('systemTest', '❌ EmotionInputController - Not available', 'error');
+                    log('EmotionInputController not available', 'error');
+                }
+                
+            } catch (error) {
+                addStatus('systemTest', `❌ System - Error: ${error.message}`, 'error');
+                log(`System error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run basic tests on page load
+        window.addEventListener('load', () => {
+            log('Test page loaded');
+            setTimeout(() => {
+                testFiles();
+                testLibraries();
+                testBrowser();
+            }, 1000);
+        });
+    </script>
+</body>
+</html> 

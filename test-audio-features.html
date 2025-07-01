@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Features Test - TeamPulse</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/emotion-input.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="js/tf.min.js"></script>
+    <script src="js/meyda.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="content-area">
+            <div class="main-content">
+                <div class="section-header">
+                    <h2>Audio Features Test</h2>
+                    <p>Testing voice analysis with real-time spectrogram and hybrid storage</p>
+                </div>
+
+                <!-- Test Controls -->
+                <div class="test-controls">
+                    <button class="btn btn-primary" id="testVoiceAnalyzer">
+                        <i class="fas fa-microphone"></i> Test Voice Analyzer
+                    </button>
+                    <button class="btn btn-secondary" id="testHybridStorage">
+                        <i class="fas fa-database"></i> Test Hybrid Storage
+                    </button>
+                    <button class="btn btn-success" id="testDataExport">
+                        <i class="fas fa-download"></i> Test Data Export
+                    </button>
+                </div>
+
+                <!-- Test Results -->
+                <div class="test-results" id="testResults">
+                    <h3>Test Results</h3>
+                    <div id="testOutput">
+                        <p>Click a test button to start testing...</p>
+                    </div>
+                </div>
+
+                <!-- Voice Analysis Test -->
+                <div class="voice-test-section" id="voiceTestSection" style="display: none;">
+                    <h3>Voice Analysis Test</h3>
+                    
+                    <!-- Audio Level Indicator -->
+                    <div class="audio-level-container">
+                        <div class="audio-level-display">
+                            <div class="level-meter">
+                                <div class="level-fill" id="testAudioLevelFill"></div>
+                            </div>
+                            <span class="level-text" id="testAudioLevelText">-∞ dB</span>
+                        </div>
+                        <div class="audio-status" id="testAudioStatus">Ready to test</div>
+                    </div>
+                    
+                    <!-- Real-time Spectrogram -->
+                    <div class="spectrogram-container">
+                        <h4>Real-time Spectrogram</h4>
+                        <canvas id="testSpectrogramCanvas" width="400" height="200"></canvas>
+                        <div class="spectrogram-info">
+                            <span>Frequency (Hz) →</span>
+                            <span>Time →</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Voice Controls -->
+                    <div class="voice-controls">
+                        <button class="btn btn-primary" id="testStartRecording">
+                            <i class="fas fa-microphone"></i> Start Recording
+                        </button>
+                        <button class="btn btn-danger" id="testStopRecording" disabled>
+                            <i class="fas fa-stop"></i> Stop Recording
+                        </button>
+                    </div>
+                    
+                    <!-- Emotion Results -->
+                    <div class="voice-results">
+                        <div class="real-time-emotion">
+                            <h4>Real-time Emotion Detection</h4>
+                            <div class="emotion-display" id="testEmotionDisplay">
+                                <span class="emotion-icon">🎤</span>
+                                <span class="emotion-text">Waiting for audio...</span>
+                                <div class="confidence-indicator">
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" id="testConfidenceBar"></div>
+                                    </div>
+                                    <span id="testConfidenceText">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Storage Test -->
+                <div class="storage-test-section" id="storageTestSection" style="display: none;">
+                    <h3>Hybrid Storage Test</h3>
+                    
+                    <div class="test-controls">
+                        <button class="btn btn-primary" id="testSaveData">
+                            <i class="fas fa-save"></i> Save Test Data
+                        </button>
+                        <button class="btn btn-secondary" id="testLoadData">
+                            <i class="fas fa-folder-open"></i> Load Data
+                        </button>
+                        <button class="btn btn-danger" id="testClearData">
+                            <i class="fas fa-trash"></i> Clear Data
+                        </button>
+                    </div>
+                    
+                    <div class="storage-info">
+                        <h4>Storage Information</h4>
+                        <div id="storageStats">
+                            <p>Loading storage statistics...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Export Test -->
+                <div class="export-test-section" id="exportTestSection" style="display: none;">
+                    <h3>Data Export Test</h3>
+                    
+                    <div class="test-controls">
+                        <button class="btn btn-primary" id="testExportJSON">
+                            <i class="fas fa-file-code"></i> Export JSON
+                        </button>
+                        <button class="btn btn-secondary" id="testExportCSV">
+                            <i class="fas fa-file-csv"></i> Export CSV
+                        </button>
+                        <button class="btn btn-success" id="testGenerateReport">
+                            <i class="fas fa-chart-bar"></i> Generate Report
+                        </button>
+                    </div>
+                    
+                    <div class="export-info">
+                        <h4>Export Information</h4>
+                        <div id="exportStats">
+                            <p>Ready to export data...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/dataStorage.js"></script>
+    <script src="js/hybridStorage.js"></script>
+    <script src="js/voiceEmotionAnalyzer.js"></script>
+    <script src="js/dataExport.js"></script>
+    
+    <script>
+        // Test Controller
+        class AudioFeaturesTest {
+            constructor() {
+                this.voiceAnalyzer = null;
+                this.hybridStorage = null;
+                this.dataExport = null;
+                this.isRecording = false;
+                
+                this.initialize();
+            }
+
+            async initialize() {
+                try {
+                    console.log('Initializing Audio Features Test...');
+                    
+                    // Initialize components
+                    this.hybridStorage = new HybridStorage();
+                    this.voiceAnalyzer = new VoiceEmotionAnalyzer();
+                    this.dataExport = new DataExport();
+                    
+                    await this.voiceAnalyzer.initialize();
+                    
+                    // Set up callbacks
+                    this.voiceAnalyzer.setCallbacks({
+                        onAudioLevel: (level) => this.updateTestAudioLevel(level),
+                        onEmotionDetected: (emotion) => this.updateTestEmotion(emotion),
+                        onEmotionUpdate: (emotion) => this.updateTestEmotion(emotion)
+                    });
+                    
+                    this.setupEventListeners();
+                    
+                    console.log('Audio Features Test initialized');
+                } catch (error) {
+                    console.error('Failed to initialize test:', error);
+                    this.showTestOutput('Failed to initialize: ' + error.message, 'error');
+                }
+            }
+
+            setupEventListeners() {
+                // Test buttons
+                document.getElementById('testVoiceAnalyzer').addEventListener('click', () => this.showVoiceTest());
+                document.getElementById('testHybridStorage').addEventListener('click', () => this.showStorageTest());
+                document.getElementById('testDataExport').addEventListener('click', () => this.showExportTest());
+
+                // Voice test controls
+                document.getElementById('testStartRecording').addEventListener('click', () => this.startTestRecording());
+                document.getElementById('testStopRecording').addEventListener('click', () => this.stopTestRecording());
+
+                // Storage test controls
+                document.getElementById('testSaveData').addEventListener('click', () => this.testSaveData());
+                document.getElementById('testLoadData').addEventListener('click', () => this.testLoadData());
+                document.getElementById('testClearData').addEventListener('click', () => this.testClearData());
+
+                // Export test controls
+                document.getElementById('testExportJSON').addEventListener('click', () => this.testExportJSON());
+                document.getElementById('testExportCSV').addEventListener('click', () => this.testExportCSV());
+                document.getElementById('testGenerateReport').addEventListener('click', () => this.testGenerateReport());
+            }
+
+            showTestOutput(message, type = 'info') {
+                const output = document.getElementById('testOutput');
+                const timestamp = new Date().toLocaleTimeString();
+                const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+                
+                output.innerHTML += `<p class="${className}">[${timestamp}] ${message}</p>`;
+                output.scrollTop = output.scrollHeight;
+            }
+
+            showVoiceTest() {
+                this.hideAllSections();
+                document.getElementById('voiceTestSection').style.display = 'block';
+                this.showTestOutput('Voice analysis test section loaded');
+            }
+
+            showStorageTest() {
+                this.hideAllSections();
+                document.getElementById('storageTestSection').style.display = 'block';
+                this.loadStorageStats();
+                this.showTestOutput('Storage test section loaded');
+            }
+
+            showExportTest() {
+                this.hideAllSections();
+                document.getElementById('exportTestSection').style.display = 'block';
+                this.showTestOutput('Export test section loaded');
+            }
+
+            hideAllSections() {
+                document.getElementById('voiceTestSection').style.display = 'none';
+                document.getElementById('storageTestSection').style.display = 'none';
+                document.getElementById('exportTestSection').style.display = 'none';
+            }
+
+            async startTestRecording() {
+                try {
+                    await this.voiceAnalyzer.startRecording();
+                    this.isRecording = true;
+                    
+                    document.getElementById('testStartRecording').disabled = true;
+                    document.getElementById('testStopRecording').disabled = false;
+                    document.getElementById('testAudioStatus').textContent = 'Recording...';
+                    
+                    this.showTestOutput('Voice recording started', 'success');
+                } catch (error) {
+                    this.showTestOutput('Failed to start recording: ' + error.message, 'error');
+                }
+            }
+
+            stopTestRecording() {
+                try {
+                    this.voiceAnalyzer.stopRecording();
+                    this.isRecording = false;
+                    
+                    document.getElementById('testStartRecording').disabled = false;
+                    document.getElementById('testStopRecording').disabled = true;
+                    document.getElementById('testAudioStatus').textContent = 'Recording stopped';
+                    
+                    this.showTestOutput('Voice recording stopped', 'success');
+                } catch (error) {
+                    this.showTestOutput('Failed to stop recording: ' + error.message, 'error');
+                }
+            }
+
+            updateTestAudioLevel(level) {
+                const fill = document.getElementById('testAudioLevelFill');
+                const text = document.getElementById('testAudioLevelText');
+                
+                if (fill) {
+                    const normalizedLevel = Math.max(0, Math.min(100, (level + 60) * 1.67));
+                    fill.style.width = `${normalizedLevel}%`;
+                }
+                
+                if (text) {
+                    text.textContent = `${level.toFixed(1)} dB`;
+                }
+            }
+
+            updateTestEmotion(emotion) {
+                const display = document.getElementById('testEmotionDisplay');
+                const icon = display?.querySelector('.emotion-icon');
+                const text = display?.querySelector('.emotion-text');
+                const confidenceBar = document.getElementById('testConfidenceBar');
+                const confidenceText = document.getElementById('testConfidenceText');
+
+                if (icon && text) {
+                    const emotionData = this.voiceAnalyzer.emotions[emotion.name];
+                    if (emotionData) {
+                        icon.textContent = emotionData.icon;
+                        text.textContent = emotionData.label;
+                    } else {
+                        icon.textContent = '🎤';
+                        text.textContent = emotion.name;
+                    }
+                }
+
+                if (confidenceBar && confidenceText) {
+                    const confidencePercent = Math.round(emotion.confidence * 100);
+                    confidenceBar.style.width = `${confidencePercent}%`;
+                    confidenceText.textContent = `${confidencePercent}%`;
+                }
+            }
+
+            async testSaveData() {
+                try {
+                    const testData = {
+                        emotion: 'happy',
+                        confidence: 0.85,
+                        notes: 'Test data from audio features test',
+                        type: 'test',
+                        source: 'audio_test',
+                        timestamp: new Date().toISOString()
+                    };
+
+                    await this.hybridStorage.saveEmotionData(testData);
+                    this.showTestOutput('Test data saved successfully', 'success');
+                    this.loadStorageStats();
+                } catch (error) {
+                    this.showTestOutput('Failed to save test data: ' + error.message, 'error');
+                }
+            }
+
+            async testLoadData() {
+                try {
+                    const data = await this.hybridStorage.getEmotionData();
+                    this.showTestOutput(`Loaded ${data.length} records from storage`, 'success');
+                    
+                    if (data.length > 0) {
+                        const latest = data[data.length - 1];
+                        this.showTestOutput(`Latest record: ${latest.emotion} (${Math.round(latest.confidence * 100)}%)`);
+                    }
+                } catch (error) {
+                    this.showTestOutput('Failed to load data: ' + error.message, 'error');
+                }
+            }
+
+            async testClearData() {
+                try {
+                    if (confirm('Are you sure you want to clear all test data?')) {
+                        await this.hybridStorage.clearEmotionData();
+                        this.showTestOutput('All test data cleared', 'success');
+                        this.loadStorageStats();
+                    }
+                } catch (error) {
+                    this.showTestOutput('Failed to clear data: ' + error.message, 'error');
+                }
+            }
+
+            async loadStorageStats() {
+                try {
+                    const stats = await this.hybridStorage.getStorageStats();
+                    const statsDiv = document.getElementById('storageStats');
+                    
+                    if (stats) {
+                        statsDiv.innerHTML = `
+                            <div class="stat-item">
+                                <span class="stat-label">Total Records:</span>
+                                <span class="stat-value">${stats.emotionRecords}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Storage Mode:</span>
+                                <span class="stat-value">${stats.storageMode}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Online Status:</span>
+                                <span class="stat-value">${stats.isOnline ? 'Online' : 'Offline'}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Last Updated:</span>
+                                <span class="stat-value">${new Date(stats.lastUpdated).toLocaleString()}</span>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    this.showTestOutput('Failed to load storage stats: ' + error.message, 'error');
+                }
+            }
+
+            async testExportJSON() {
+                try {
+                    const count = await this.dataExport.exportToJSON();
+                    this.showTestOutput(`Exported ${count} records to JSON`, 'success');
+                } catch (error) {
+                    this.showTestOutput('Failed to export JSON: ' + error.message, 'error');
+                }
+            }
+
+            async testExportCSV() {
+                try {
+                    const count = await this.dataExport.exportToCSV();
+                    this.showTestOutput(`Exported ${count} records to CSV`, 'success');
+                } catch (error) {
+                    this.showTestOutput('Failed to export CSV: ' + error.message, 'error');
+                }
+            }
+
+            async testGenerateReport() {
+                try {
+                    const report = await this.dataExport.generateReport();
+                    this.showTestOutput('Report generated successfully', 'success');
+                    
+                    const exportStats = document.getElementById('exportStats');
+                    exportStats.innerHTML = `
+                        <div class="stat-item">
+                            <span class="stat-label">Report Generated:</span>
+                            <span class="stat-value">${new Date(report.generatedAt).toLocaleString()}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Total Records:</span>
+                            <span class="stat-value">${report.summary.totalRecords}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Most Frequent Emotion:</span>
+                            <span class="stat-value">${report.summary.mostFrequentEmotion}</span>
+                        </div>
+                    `;
+                } catch (error) {
+                    this.showTestOutput('Failed to generate report: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Initialize test when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.audioFeaturesTest = new AudioFeaturesTest();
+        });
+    </script>
+
+    <style>
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .test-results {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .test-results h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+        }
+
+        #testOutput {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+
+        #testOutput p {
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        #testOutput .error {
+            color: #dc3545;
+        }
+
+        #testOutput .success {
+            color: #28a745;
+        }
+
+        #testOutput .info {
+            color: #17a2b8;
+        }
+
+        .voice-test-section,
+        .storage-test-section,
+        .export-test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .storage-info,
+        .export-info {
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .stat-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .stat-value {
+            font-family: 'Courier New', monospace;
+            color: #3498db;
+        }
+    </style>
+</body>
+</html> 

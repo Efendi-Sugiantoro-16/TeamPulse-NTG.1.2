@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dependency Test - TeamPulse</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    </style>
+</head>
+<body>
+    <h1>TeamPulse Dependency Test</h1>
+    <div id="results"></div>
+
+    <!-- Load JavaScript Dependencies -->
+    <script src="js/tf.min.js"></script>
+    <script src="models/face-api.min.js"></script>
+    <script src="js/meyda.min.js"></script>
+    <script src="js/hybridStorage.js"></script>
+    <script src="js/dataStorage.js"></script>
+    <script src="js/aiModelManager.js"></script>
+    <script src="js/tensorflowInit.js"></script>
+    <script src="js/faceApiManager.js"></script>
+    <script src="js/components/DataManager.js"></script>
+    <script src="js/components/UIManager.js"></script>
+    <script src="js/components/CameraManager.js"></script>
+    <script src="js/components/AudioManager.js"></script>
+    <script src="js/components/TextAnalyzer.js"></script>
+    <script src="js/emotionController.js"></script>
+
+    <script>
+        function addResult(message, type = 'success') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+
+        function testDependency(name, checkFn) {
+            try {
+                if (checkFn()) {
+                    addResult(`✅ ${name} - Loaded successfully`);
+                    return true;
+                } else {
+                    addResult(`❌ ${name} - Not found`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                addResult(`❌ ${name} - Error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        function testOptionalDependency(name, checkFn) {
+            try {
+                if (checkFn()) {
+                    addResult(`✅ ${name} - Available`);
+                    return true;
+                } else {
+                    addResult(`⚠️ ${name} - Not available (optional)`, 'warning');
+                    return false;
+                }
+            } catch (error) {
+                addResult(`⚠️ ${name} - Error: ${error.message} (optional)`, 'warning');
+                return false;
+            }
+        }
+
+        // Test all dependencies
+        document.addEventListener('DOMContentLoaded', () => {
+            addResult('🔍 Testing dependencies...', 'warning');
+
+            // Required dependencies
+            const requiredDeps = [
+                ['DataManager', () => typeof DataManager !== 'undefined'],
+                ['UIManager', () => typeof UIManager !== 'undefined'],
+                ['CameraManager', () => typeof CameraManager !== 'undefined'],
+                ['AudioManager', () => typeof AudioManager !== 'undefined'],
+                ['TextAnalyzer', () => typeof TextAnalyzer !== 'undefined'],
+                ['EmotionController', () => typeof EmotionController !== 'undefined']
+            ];
+
+            // Optional dependencies
+            const optionalDeps = [
+                ['DataStorage', () => typeof DataStorage !== 'undefined'],
+                ['HybridStorage', () => typeof HybridStorage !== 'undefined'],
+                ['AIModelManager', () => typeof AIModelManager !== 'undefined'],
+                ['FaceApiManager', () => typeof FaceApiManager !== 'undefined'],
+                ['TensorFlow', () => typeof tf !== 'undefined'],
+                ['FaceAPI', () => typeof faceapi !== 'undefined'],
+                ['Meyda', () => typeof Meyda !== 'undefined']
+            ];
+
+            let allRequiredLoaded = true;
+
+            // Test required dependencies
+            addResult('📋 Testing required dependencies...', 'warning');
+            requiredDeps.forEach(([name, checkFn]) => {
+                if (!testDependency(name, checkFn)) {
+                    allRequiredLoaded = false;
+                }
+            });
+
+            // Test optional dependencies
+            addResult('📋 Testing optional dependencies...', 'warning');
+            optionalDeps.forEach(([name, checkFn]) => {
+                testOptionalDependency(name, checkFn);
+            });
+
+            // Final result
+            if (allRequiredLoaded) {
+                addResult('🎉 All required dependencies loaded successfully!', 'success');
+                addResult('✅ System should work correctly', 'success');
+            } else {
+                addResult('❌ Some required dependencies failed to load', 'error');
+                addResult('❌ System will not work correctly', 'error');
+            }
+
+            // Test instantiation
+            if (allRequiredLoaded) {
+                addResult('🧪 Testing component instantiation...', 'warning');
+                
+                try {
+                    const dataManager = new DataManager();
+                    addResult('✅ DataManager instantiated successfully');
+                } catch (error) {
+                    addResult(`❌ DataManager instantiation failed: ${error.message}`, 'error');
+                }
+
+                try {
+                    const uiManager = new UIManager();
+                    addResult('✅ UIManager instantiated successfully');
+                } catch (error) {
+                    addResult(`❌ UIManager instantiation failed: ${error.message}`, 'error');
+                }
+
+                try {
+                    const cameraManager = new CameraManager();
+                    addResult('✅ CameraManager instantiated successfully');
+                } catch (error) {
+                    addResult(`❌ CameraManager instantiation failed: ${error.message}`, 'error');
+                }
+
+                try {
+                    const audioManager = new AudioManager();
+                    addResult('✅ AudioManager instantiated successfully');
+                } catch (error) {
+                    addResult(`❌ AudioManager instantiation failed: ${error.message}`, 'error');
+                }
+
+                try {
+                    const textAnalyzer = new TextAnalyzer();
+                    addResult('✅ TextAnalyzer instantiated successfully');
+                } catch (error) {
+                    addResult(`❌ TextAnalyzer instantiation failed: ${error.message}`, 'error');
+                }
+
+                try {
+                    const emotionController = new EmotionController();
+                    addResult('✅ EmotionController instantiated successfully');
+                } catch (error) {
+                    addResult(`❌ EmotionController instantiation failed: ${error.message}`, 'error');
+                }
+            }
+        });
+    </script>
+</body>
+</html> 

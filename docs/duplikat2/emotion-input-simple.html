@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Input - TeamPulse (Simple)</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/emotion-input.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h2>TeamPulse</h2>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
+                <li><a href="emotion-input.html" class="active"><i class="fas fa-camera"></i>Emotion Input</a></li>
+                <li><a href="history.html"><i class="fas fa-history"></i>History</a></li>
+                <li><a href="feedback.html"><i class="fas fa-comments"></i>Feedback</a></li>
+                <li><a href="settings.html"><i class="fas fa-cog"></i>Settings</a></li>
+                <li><a href="index.html"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Mobile Menu Toggle -->
+    <button id="menuToggle" class="menu-toggle" aria-label="Toggle navigation menu">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <div class="emotion-input-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-brain"></i> AI Emotion Analysis (Simple)</h1>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </button>
+                    <button class="btn btn-info" id="exportBtn">
+                        <i class="fas fa-download"></i> Export Data
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Session Info -->
+        <div class="session-info">
+            <div class="session-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Session Duration:</span>
+                    <span class="stat-value" id="sessionDuration">00:00:00</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">AI Analysis:</span>
+                    <span class="stat-value" id="analysisCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Storage:</span>
+                    <span class="stat-value" id="storageStatus">Loading...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Input Methods Tabs -->
+            <div class="input-tabs">
+                <button class="tab-btn active" data-tab="camera">
+                    <i class="fas fa-camera"></i> Camera Analysis
+                </button>
+                <button class="tab-btn" data-tab="audio">
+                    <i class="fas fa-microphone"></i> Voice Analysis
+                </button>
+                <button class="tab-btn" data-tab="text">
+                    <i class="fas fa-keyboard"></i> AI Text Analysis
+                </button>
+            </div>
+            
+            <div class="input-sections">
+                <!-- Camera Analysis Section -->
+                <div class="input-section active" id="camera-section">
+                    <div class="section-content">
+                        <h3>Real-time Facial Expression Analysis</h3>
+                        <p>AI akan menganalisis ekspresi wajah Anda secara real-time untuk mendeteksi emosi.</p>
+                        
+                        <div class="camera-controls">
+                            <button class="btn btn-primary" id="startCameraBtn">
+                                <i class="fas fa-camera"></i> Start Camera
+                            </button>
+                            <button class="btn btn-danger" id="stopCameraBtn" disabled>
+                                <i class="fas fa-stop"></i> Stop Camera
+                            </button>
+                            <button class="btn btn-success" id="captureSnapshotBtn" disabled>
+                                <i class="fas fa-camera-retro"></i> Capture Snapshot
+                            </button>
+                        </div>
+
+                        <div class="camera-status">
+                            <span id="cameraStatus">Camera not active</span>
+                        </div>
+
+                        <div class="camera-container">
+                            <video id="cameraVideo" autoplay muted playsinline></video>
+                            <canvas id="cameraCanvas" width="640" height="480"></canvas>
+                        </div>
+
+                        <div class="real-time-analysis">
+                            <div class="analysis-item">
+                                <span class="analysis-label">Detected Emotion:</span>
+                                <span class="analysis-value" id="cameraEmotion">-</span>
+                            </div>
+                            <div class="analysis-item">
+                                <span class="analysis-label">Confidence:</span>
+                                <div class="confidence-meter">
+                                    <div class="confidence-fill" id="cameraConfidenceMeter"></div>
+                                    <span class="confidence-text">0%</span>
+                                </div>
+                            </div>
+                            <div class="analysis-item">
+                                <span class="analysis-label">Face Detected:</span>
+                                <span class="analysis-value" id="faceDetected">No</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audio Analysis Section -->
+                <div class="input-section" id="audio-section">
+                    <div class="section-content">
+                        <h3>Voice Emotion Analysis</h3>
+                        <p>AI akan menganalisis nada suara, intonasi, dan pola bicara untuk mendeteksi emosi.</p>
+                        
+                        <div class="audio-controls">
+                            <button class="btn btn-primary" id="startAudioBtn">
+                                <i class="fas fa-microphone"></i> Start Voice Analysis
+                            </button>
+                            <button class="btn btn-danger" id="stopAudioBtn" disabled>
+                                <i class="fas fa-stop"></i> Stop Analysis
+                            </button>
+                            <button class="btn btn-secondary" id="recordAudioBtn" disabled>
+                                <i class="fas fa-record-vinyl"></i> Record Audio
+                            </button>
+                        </div>
+
+                        <div class="audio-status">
+                            <span id="audioStatus">Audio analysis not active</span>
+                        </div>
+
+                        <div class="audio-visualization">
+                            <div class="audio-level-meter">
+                                <div class="meter-label">Voice Level</div>
+                                <div class="meter-container">
+                                    <div class="meter-fill" id="audioLevelFill"></div>
+                                    <span class="meter-text" id="audioLevelText">0 dB</span>
+                                </div>
+                            </div>
+                            
+                            <div class="spectrogram-container">
+                                <canvas id="spectrogramCanvas" width="400" height="200"></canvas>
+                                <div class="spectrogram-label">Voice Pattern Analysis</div>
+                            </div>
+                        </div>
+
+                        <div class="real-time-analysis">
+                            <div class="analysis-item">
+                                <span class="analysis-label">Voice Emotion:</span>
+                                <span class="analysis-value" id="audioEmotion">-</span>
+                            </div>
+                            <div class="analysis-item">
+                                <span class="analysis-label">Confidence:</span>
+                                <div class="confidence-meter">
+                                    <div class="confidence-fill" id="audioConfidenceMeter"></div>
+                                    <span class="confidence-text">0%</span>
+                                </div>
+                            </div>
+                            <div class="analysis-item">
+                                <span class="analysis-label">Voice Quality:</span>
+                                <span class="analysis-value" id="voiceQuality">Poor</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Text Analysis Section -->
+                <div class="input-section" id="text-section">
+                    <div class="section-content">
+                        <h3>AI-Powered Text Sentiment Analysis</h3>
+                        <p>AI akan menganalisis konten emosional dari teks yang Anda masukkan.</p>
+                        
+                        <div class="text-input-group">
+                            <label for="textInput">Enter your text for AI analysis:</label>
+                            <textarea id="textInput" placeholder="Type your thoughts, feelings, or any text for AI emotion analysis..."></textarea>
+                        </div>
+
+                        <button class="btn btn-primary" id="analyzeTextBtn">
+                            <i class="fas fa-brain"></i> Analyze with AI
+                        </button>
+
+                        <div class="ai-analysis-results" id="aiAnalysisResults">
+                            <!-- AI analysis results will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Emotion Display -->
+            <div class="current-emotion-display">
+                <h3>AI Detected Emotion</h3>
+                <div class="emotion-display neutral" id="currentEmotion">
+                    No emotion detected
+                </div>
+                <div class="emotion-source">
+                    <span id="emotionSource">-</span>
+                </div>
+                <div class="emotion-actions">
+                    <button class="btn btn-success" id="submitDataBtn" disabled>
+                        <i class="fas fa-save"></i> Submit Data
+                    </button>
+                    <button class="btn btn-info" id="viewDashboardBtn">
+                        <i class="fas fa-chart-bar"></i> View Dashboard
+                    </button>
+                </div>
+                <div class="permanent-storage-info" style="margin-top:8px; font-size:0.95em; color:#27ae60;">
+                    <i class="fas fa-database"></i> Data akan disimpan secara permanen dan tidak hilang walaupun server mati atau browser ditutup.
+                </div>
+                <div class="storage-mode-info" style="margin-top:4px; font-size:0.95em; color:#2980b9;">
+                    <i class="fas fa-server"></i> Mode Penyimpanan: <span id="storageModeStatus">Lokal (Browser)</span>
+                </div>
+            </div>
+
+            <!-- Recent AI Analysis History -->
+            <div class="recent-history">
+                <h3>Recent AI Analysis</h3>
+                <div class="history-container" id="emotionHistory">
+                    <!-- Recent AI analysis entries will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Core Components Only -->
+    <script src="js/components/DataManager.js"></script>
+    <script src="js/components/UIManager.js"></script>
+    <script src="js/components/CameraManager.js"></script>
+    <script src="js/components/AudioManager.js"></script>
+    <script src="js/components/TextAnalyzer.js"></script>
+    
+    <!-- Load Main Controller -->
+    <script src="js/emotionController.js"></script>
+    <script src="js/sidebar.js"></script>
+    
+    <script>
+        // Simple initialization
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                console.log('=== Simple Emotion Input System Initialization ===');
+                
+                // Check dependencies
+                const deps = ['DataManager', 'UIManager', 'CameraManager', 'AudioManager', 'TextAnalyzer', 'EmotionController'];
+                const missing = deps.filter(dep => typeof window[dep] === 'undefined');
+                
+                if (missing.length > 0) {
+                    throw new Error(`Missing dependencies: ${missing.join(', ')}`);
+                }
+                
+                console.log('All dependencies found, initializing...');
+                
+                // Initialize controller
+                window.emotionController = new EmotionController();
+                await window.emotionController.init();
+                
+                console.log('Simple Emotion Input System initialized successfully');
+                showNotification('System berhasil diinisialisasi!', 'success');
+                
+            } catch (error) {
+                console.error('Initialization failed:', error);
+                showNotification('Gagal menginisialisasi sistem: ' + error.message, 'error');
+            }
+        });
+        
+        // Simple notification function
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 3000);
+        }
+    </script>
+</body>
+</html> 

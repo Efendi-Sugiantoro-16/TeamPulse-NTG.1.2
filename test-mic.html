@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Microphone Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .meter { width: 300px; height: 30px; background: #ddd; border-radius: 15px; overflow: hidden; }
+        .fill { height: 100%; background: linear-gradient(90deg, green, yellow, red); width: 0%; transition: width 0.1s; }
+        canvas { border: 1px solid #000; background: #000; margin: 10px 0; }
+        button { padding: 10px 20px; margin: 5px; }
+        .start { background: green; color: white; }
+        .stop { background: red; color: white; }
+    </style>
+</head>
+<body>
+    <h1>🎤 Microphone Test</h1>
+    
+    <div id="status">Click Start to begin</div>
+    
+    <div class="meter">
+        <div class="fill" id="levelFill"></div>
+    </div>
+    
+    <div id="levelText">Level: -∞ dB</div>
+    
+    <canvas id="spectrogram" width="400" height="200"></canvas>
+    
+    <br>
+    <button class="start" id="startBtn">Start Recording</button>
+    <button class="stop" id="stopBtn" disabled>Stop Recording</button>
+    <button id="playBtn" disabled>Play</button>
+    <button id="downloadBtn" disabled>Download</button>
+
+    <script>
+        class MicTest {
+            constructor() {
+                this.audioContext = null;
+                this.analyser = null;
+                this.mediaStream = null;
+                this.isRecording = false;
+                this.mediaRecorder = null;
+                this.audioChunks = [];
+                this.recordedAudio = null;
+                
+                this.canvas = document.getElementById('spectrogram');
+                this.ctx = this.canvas.getContext('2d');
+                this.spectrogramData = [];
+                
+                this.init();
+            }
+            
+            async init() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.analyser = this.audioContext.createAnalyser();
+                    this.analyser.fftSize = 2048;
+                    this.updateStatus('Ready');
+                } catch (e) {
+                    this.updateStatus('Error: ' + e.message);
+                }
+            }
+            
+            async startRecording() {
+                try {
+                    this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    
+                    const source = this.audioContext.createMediaStreamSource(this.mediaStream);
+                    source.connect(this.analyser);
+                    
+                    this.mediaRecorder = new MediaRecorder(this.mediaStream);
+                    this.audioChunks = [];
+                    
+                    this.mediaRecorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) this.audioChunks.push(e.data);
+                    };
+                    
+                    this.mediaRecorder.onstop = () => {
+                        const blob = new Blob(this.audioChunks, { type: 'audio/wav' });
+                        this.recordedAudio = URL.createObjectURL(blob);
+                        this.updateButtons();
+                    };
+                    
+                    this.mediaRecorder.start();
+                    this.isRecording = true;
+                    this.updateStatus('Recording...');
+                    this.updateButtons();
+                    this.analyze();
+                } catch (e) {
+                    this.updateStatus('Error: ' + e.message);
+                }
+            }
+            
+            stopRecording() {
+                if (this.mediaRecorder) this.mediaRecorder.stop();
+                if (this.mediaStream) {
+                    this.mediaStream.getTracks().forEach(track => track.stop());
+                }
+                this.isRecording = false;
+                this.updateStatus('Stopped');
+                this.updateButtons();
+            }
+            
+            analyze() {
+                if (!this.isRecording) return;
+                
+                const bufferLength = this.analyser.frequencyBinCount;
+                const frequencyData = new Float32Array(bufferLength);
+                const timeData = new Float32Array(bufferLength);
+                
+                this.analyser.getFloatFrequencyData(frequencyData);
+                this.analyser.getFloatTimeDomainData(timeData);
+                
+                // Update audio level
+                let sum = 0;
+                for (let i = 0; i < timeData.length; i++) {
+                    sum += timeData[i] * timeData[i];
+                }
+                const rms = Math.sqrt(sum / timeData.length);
+                const level = 20 * Math.log10(rms);
+                
+                document.getElementById('levelText').textContent = `Level: ${level.toFixed(1)} dB`;
+                document.getElementById('levelFill').style.width = Math.max(0, Math.min(100, (level + 60) * 1.67)) + '%';
+                
+                // Update spectrogram
+                this.spectrogramData.push(frequencyData);
+                if (this.spectrogramData.length > 200) this.spectrogramData.shift();
+                
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                const sliceWidth = this.canvas.width / this.spectrogramData.length;
+                const binHeight = this.canvas.height / frequencyData.length;
+                
+                for (let i = 0; i < this.spectrogramData.length; i++) {
+                    const slice = this.spectrogramData[i];
+                    const x = i * sliceWidth;
+                    
+                    for (let j = 0; j < slice.length; j++) {
+                        const y = this.canvas.height - (j * binHeight);
+                        const magnitude = (slice[j] + 140) / 140;
+                        const intensity = Math.max(0, Math.min(1, magnitude));
+                        
+                        const hue = (j / slice.length) * 360;
+                        this.ctx.fillStyle = `hsl(${hue}, 100%, ${50 + intensity * 50}%)`;
+                        this.ctx.fillRect(x, y, sliceWidth, binHeight);
+                    }
+                }
+                
+                requestAnimationFrame(() => this.analyze());
+            }
+            
+            playRecording() {
+                if (this.recordedAudio) {
+                    new Audio(this.recordedAudio).play();
+                }
+            }
+            
+            downloadRecording() {
+                if (this.recordedAudio) {
+                    const link = document.createElement('a');
+                    link.href = this.recordedAudio;
+                    link.download = 'recording.wav';
+                    link.click();
+                }
+            }
+            
+            updateStatus(msg) {
+                document.getElementById('status').textContent = msg;
+            }
+            
+            updateButtons() {
+                document.getElementById('startBtn').disabled = this.isRecording;
+                document.getElementById('stopBtn').disabled = !this.isRecording;
+                document.getElementById('playBtn').disabled = !this.recordedAudio;
+                document.getElementById('downloadBtn').disabled = !this.recordedAudio;
+            }
+        }
+        
+        let micTest;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            micTest = new MicTest();
+            
+            document.getElementById('startBtn').onclick = () => micTest.startRecording();
+            document.getElementById('stopBtn').onclick = () => micTest.stopRecording();
+            document.getElementById('playBtn').onclick = () => micTest.playRecording();
+            document.getElementById('downloadBtn').onclick = () => micTest.downloadRecording();
+        });
+    </script>
+</body>
+</html> 

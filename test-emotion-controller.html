@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Controller Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .component-test {
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .component-test h4 {
+            margin-top: 0;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+    <h1>Emotion Controller System Test</h1>
+    
+    <div class="test-section">
+        <h2>Dependency Check</h2>
+        <div id="dependencyResults"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Component Tests</h2>
+        <div id="componentResults"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Integration Tests</h2>
+        <div id="integrationResults"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Manual Tests</h2>
+        <div class="component-test">
+            <h4>DataManager Test</h4>
+            <button onclick="testDataManager()">Test Data Operations</button>
+            <button onclick="testDataExport()">Test Data Export</button>
+            <div id="dataManagerLog" class="log"></div>
+        </div>
+        
+        <div class="component-test">
+            <h4>TextAnalyzer Test</h4>
+            <button onclick="testTextAnalysis()">Test Text Analysis</button>
+            <div id="textAnalyzerLog" class="log"></div>
+        </div>
+        
+        <div class="component-test">
+            <h4>UIManager Test</h4>
+            <button onclick="testUIManager()">Test UI Operations</button>
+            <div id="uiManagerLog" class="log"></div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>System Log</h2>
+        <div id="systemLog" class="log"></div>
+    </div>
+
+    <!-- Load Dependencies -->
+    <script src="js/tf.min.js"></script>
+    <script src="models/face-api.min.js"></script>
+    <script src="js/meyda.min.js"></script>
+    <script src="js/hybridStorage.js"></script>
+    <script src="js/dataStorage.js"></script>
+    <script src="js/aiModelManager.js"></script>
+    <script src="js/tensorflowInit.js"></script>
+    <script src="js/faceApiManager.js"></script>
+    
+    <!-- Load Components -->
+    <script src="js/components/DataManager.js"></script>
+    <script src="js/components/UIManager.js"></script>
+    <script src="js/components/CameraManager.js"></script>
+    <script src="js/components/AudioManager.js"></script>
+    <script src="js/components/TextAnalyzer.js"></script>
+    
+    <!-- Load Controller -->
+    <script src="js/emotionController.js"></script>
+    
+    <script>
+        let testResults = {
+            dependencies: {},
+            components: {},
+            integration: {}
+        };
+        
+        let systemLog = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            systemLog.push(logEntry);
+            
+            const logElement = document.getElementById('systemLog');
+            if (logElement) {
+                logElement.innerHTML = systemLog.join('\n');
+                logElement.scrollTop = logElement.scrollHeight;
+            }
+            
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        function addResult(section, testName, success, message) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${success ? 'success' : 'error'}`;
+            resultDiv.innerHTML = `<strong>${testName}:</strong> ${message}`;
+            
+            const container = document.getElementById(section + 'Results');
+            if (container) {
+                container.appendChild(resultDiv);
+            }
+            
+            testResults[section][testName] = success;
+        }
+        
+        function addLog(containerId, message) {
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.innerHTML += message + '\n';
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+        
+        // Dependency Check
+        function checkDependencies() {
+            log('Checking dependencies...');
+            
+            const dependencies = {
+                'TensorFlow.js': typeof tf !== 'undefined',
+                'face-api.js': typeof faceapi !== 'undefined',
+                'Meyda': typeof Meyda !== 'undefined',
+                'DataStorage': typeof DataStorage !== 'undefined',
+                'HybridStorage': typeof HybridStorage !== 'undefined'
+            };
+            
+            Object.entries(dependencies).forEach(([name, available]) => {
+                if (available) {
+                    addResult('dependency', name, true, 'Available');
+                    log(`${name}: Available`);
+                } else {
+                    addResult('dependency', name, false, 'Missing');
+                    log(`${name}: Missing`, 'error');
+                }
+            });
+        }
+        
+        // Component Tests
+        async function testComponents() {
+            log('Testing components...');
+            
+            // Test DataManager
+            try {
+                const dataManager = new DataManager();
+                await dataManager.init();
+                addResult('component', 'DataManager', true, 'Initialized successfully');
+                log('DataManager: Initialized successfully');
+            } catch (error) {
+                addResult('component', 'DataManager', false, error.message);
+                log(`DataManager: Failed - ${error.message}`, 'error');
+            }
+            
+            // Test TextAnalyzer
+            try {
+                const textAnalyzer = new TextAnalyzer();
+                addResult('component', 'TextAnalyzer', true, 'Initialized successfully');
+                log('TextAnalyzer: Initialized successfully');
+            } catch (error) {
+                addResult('component', 'TextAnalyzer', false, error.message);
+                log(`TextAnalyzer: Failed - ${error.message}`, 'error');
+            }
+            
+            // Test CameraManager
+            try {
+                const cameraManager = new CameraManager();
+                addResult('component', 'CameraManager', true, 'Initialized successfully');
+                log('CameraManager: Initialized successfully');
+            } catch (error) {
+                addResult('component', 'CameraManager', false, error.message);
+                log(`CameraManager: Failed - ${error.message}`, 'error');
+            }
+            
+            // Test AudioManager
+            try {
+                const audioManager = new AudioManager();
+                addResult('component', 'AudioManager', true, 'Initialized successfully');
+                log('AudioManager: Initialized successfully');
+            } catch (error) {
+                addResult('component', 'AudioManager', false, error.message);
+                log(`AudioManager: Failed - ${error.message}`, 'error');
+            }
+            
+            // Test UIManager
+            try {
+                const uiManager = new UIManager();
+                uiManager.init();
+                addResult('component', 'UIManager', true, 'Initialized successfully');
+                log('UIManager: Initialized successfully');
+            } catch (error) {
+                addResult('component', 'UIManager', false, error.message);
+                log(`UIManager: Failed - ${error.message}`, 'error');
+            }
+        }
+        
+        // Integration Tests
+        async function testIntegration() {
+            log('Testing integration...');
+            
+            try {
+                const controller = new EmotionController();
+                await controller.init();
+                addResult('integration', 'EmotionController', true, 'Initialized successfully');
+                log('EmotionController: Initialized successfully');
+                
+                // Test component communication
+                if (controller.uiManager && controller.dataManager) {
+                    addResult('integration', 'Component Communication', true, 'Components can communicate');
+                    log('Component communication: Working');
+                } else {
+                    addResult('integration', 'Component Communication', false, 'Components not properly connected');
+                    log('Component communication: Failed', 'error');
+                }
+                
+            } catch (error) {
+                addResult('integration', 'EmotionController', false, error.message);
+                log(`EmotionController: Failed - ${error.message}`, 'error');
+            }
+        }
+        
+        // Manual Tests
+        async function testDataManager() {
+            const logId = 'dataManagerLog';
+            addLog(logId, 'Testing DataManager operations...');
+            
+            try {
+                const dataManager = new DataManager();
+                await dataManager.init();
+                
+                // Test save
+                const testData = {
+                    emotion: 'happy',
+                    confidence: 0.8,
+                    source: 'test',
+                    timestamp: new Date().toISOString()
+                };
+                
+                const savedData = await dataManager.saveEmotionData(testData);
+                addLog(logId, `Data saved: ${savedData.id}`);
+                
+                // Test retrieve
+                const retrievedData = await dataManager.getEmotionData();
+                addLog(logId, `Retrieved ${retrievedData.length} records`);
+                
+                // Test export
+                const exportData = await dataManager.exportData('json');
+                addLog(logId, `Export successful: ${exportData.filename}`);
+                
+                addLog(logId, 'DataManager test completed successfully');
+                
+            } catch (error) {
+                addLog(logId, `DataManager test failed: ${error.message}`);
+            }
+        }
+        
+        async function testDataExport() {
+            const logId = 'dataManagerLog';
+            addLog(logId, 'Testing data export...');
+            
+            try {
+                const dataManager = new DataManager();
+                await dataManager.init();
+                
+                // Add some test data
+                const testData = [
+                    { emotion: 'happy', confidence: 0.8, source: 'test', timestamp: new Date().toISOString() },
+                    { emotion: 'sad', confidence: 0.6, source: 'test', timestamp: new Date().toISOString() },
+                    { emotion: 'excited', confidence: 0.9, source: 'test', timestamp: new Date().toISOString() }
+                ];
+                
+                for (const data of testData) {
+                    await dataManager.saveEmotionData(data);
+                }
+                
+                // Test JSON export
+                const jsonExport = await dataManager.exportData('json');
+                addLog(logId, `JSON export: ${jsonExport.filename}`);
+                
+                // Test CSV export
+                const csvExport = await dataManager.exportData('csv');
+                addLog(logId, `CSV export: ${csvExport.filename}`);
+                
+                addLog(logId, 'Export tests completed successfully');
+                
+            } catch (error) {
+                addLog(logId, `Export test failed: ${error.message}`);
+            }
+        }
+        
+        async function testTextAnalysis() {
+            const logId = 'textAnalyzerLog';
+            addLog(logId, 'Testing TextAnalyzer...');
+            
+            try {
+                const textAnalyzer = new TextAnalyzer();
+                
+                const testTexts = [
+                    'I am so happy today! Everything is wonderful.',
+                    'I feel sad and disappointed with the results.',
+                    'I am excited about the new project and can\'t wait to start!',
+                    'I am afraid of what might happen next.',
+                    'This is a neutral statement without strong emotions.'
+                ];
+                
+                for (const text of testTexts) {
+                    const result = await textAnalyzer.analyzeText(text);
+                    addLog(logId, `"${text.substring(0, 30)}..." → ${result.emotion} (${(result.confidence * 100).toFixed(1)}%)`);
+                }
+                
+                addLog(logId, 'Text analysis tests completed successfully');
+                
+            } catch (error) {
+                addLog(logId, `Text analysis test failed: ${error.message}`);
+            }
+        }
+        
+        function testUIManager() {
+            const logId = 'uiManagerLog';
+            addLog(logId, 'Testing UIManager...');
+            
+            try {
+                const uiManager = new UIManager();
+                uiManager.init();
+                
+                // Test event system
+                uiManager.on('test', (data) => {
+                    addLog(logId, `Event received: ${data}`);
+                });
+                
+                uiManager.emit('test', 'Hello from test!');
+                
+                // Test notification system
+                uiManager.showNotification('Test notification', 'success');
+                addLog(logId, 'Notification system working');
+                
+                addLog(logId, 'UIManager tests completed successfully');
+                
+            } catch (error) {
+                addLog(logId, `UIManager test failed: ${error.message}`);
+            }
+        }
+        
+        // Run all tests
+        async function runAllTests() {
+            log('Starting comprehensive test suite...');
+            
+            checkDependencies();
+            await testComponents();
+            await testIntegration();
+            
+            log('Test suite completed');
+            
+            // Summary
+            const totalTests = Object.values(testResults).flat().length;
+            const passedTests = Object.values(testResults).flat().filter(result => result).length;
+            
+            addResult('integration', 'Test Summary', passedTests === totalTests, 
+                `${passedTests}/${totalTests} tests passed`);
+        }
+        
+        // Auto-run tests when page loads
+        document.addEventListener('DOMContentLoaded', runAllTests);
+    </script>
+</body>
+</html> 

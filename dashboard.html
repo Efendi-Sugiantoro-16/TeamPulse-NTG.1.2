@@ -3,163 +3,381 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TeamPulse Dashboard</title>
+    <title>Dashboard - TeamPulse</title>
     <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/sidebar.css">
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h2>TeamPulse</h2>
+            <button id="sidebarClose" class="sidebar-close" aria-label="Close sidebar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="dashboard.html" class="active"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
+                <li><a href="emotion-input.html"><i class="fas fa-camera"></i>Emotion Input</a></li>
+                <li><a href="history.html"><i class="fas fa-history"></i>History</a></li>
+                <li><a href="feedback.html"><i class="fas fa-comments"></i>Feedback</a></li>
+                <li><a href="settings.html"><i class="fas fa-cog"></i>Settings</a></li>
+                <li><a href="index.html"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Mobile Menu Toggle -->
+    <button id="menuToggle" class="menu-toggle" aria-label="Toggle navigation menu">
+        <i class="fas fa-bars"></i>
+    </button>
+
     <div class="dashboard-container">
-        <!-- Sidebar -->
-        <aside id="sidebar" class="sidebar">
-            <div class="sidebar-header">
-                <h2>TeamPulse</h2>
-                <button id="sidebarClose" class="sidebar-close" aria-label="Close sidebar">
-                    <i class="fas fa-times"></i>
-                </button>
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1><i class="fas fa-tachometer-alt"></i> Dashboard Emosi</h1>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="window.location.href='emotion-input.html'">
+                        <i class="fas fa-plus"></i> Tambah Emosi
+                    </button>
+                    <button class="btn btn-secondary" id="refreshBtn">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <div class="export-dropdown">
+                        <button class="btn btn-outline dropdown-toggle">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <div class="dropdown-menu">
+                            <button class="dropdown-item" data-export="json">Export sebagai JSON</button>
+                            <button class="dropdown-item" data-export="csv">Export sebagai CSV</button>
+                        </div>
+                    </div>
+                    <button class="btn btn-outline" id="fillDummyDataBtn" title="Tambah data dummy untuk testing">
+                        <i class="fas fa-database"></i> Test Data
+                    </button>
+                </div>
             </div>
-            <nav>
-                <ul>
-                    <li><a href="dashboard.html" class="active"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
-                    <li><a href="emotion-input.html"><i class="fas fa-camera"></i>Emotion Input</a></li>
-                    <li><a href="history.html"><i class="fas fa-history"></i>History</a></li>
-                    <li><a href="feedback.html"><i class="fas fa-comments"></i>Feedback</a></li>
-                    <li><a href="settings.html"><i class="fas fa-cog"></i>Settings</a></li>
-                    <li><a href="index.html"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
-                </ul>
-            </nav>
-        </aside>
+        </header>
 
-        <!-- Mobile Menu Toggle -->
-        <button id="menuToggle" class="menu-toggle" aria-label="Toggle navigation menu">
-            <i class="fas fa-bars"></i>
-        </button>
+        <!-- Period Selector -->
+        <div class="period-selector">
+            <button class="period-btn active" data-period="day">Hari Ini</button>
+            <button class="period-btn" data-period="week">Minggu Ini</button>
+            <button class="period-btn" data-period="month">Bulan Ini</button>
+            <button class="period-btn" data-period="year">Tahun Ini</button>
+        </div>
 
-        <!-- Sidebar Overlay -->
-        <div id="sidebarOverlay" class="sidebar-overlay"></div>
+        <!-- Main Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Recent Summary Section -->
+            <div id="recentSummary" class="recent-summary mb-4">
+                <!-- Will be populated by JavaScript -->
+            </div>
 
-        <!-- Main Content Area -->
-        <div class="content-area">
-            <div class="main-content">
-                <!-- Section Header -->
-                <div class="section-header">
-                    <h2>Team Emotional Intelligence Dashboard</h2>
-                    <p>Monitor and analyze team emotions in real-time</p>
-                </div>
-
-                <!-- Stats Cards -->
-                <div class="grid grid-cols-4">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Overall Mood</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="stat-value" id="overallMood">Positive</div>
-                            <div class="stat-change positive">+12% from last week</div>
-                        </div>
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-chart-line"></i>
                     </div>
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Stress Level</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="stat-value" id="stressLevel">Low</div>
-                            <div class="stat-change negative">+5% from last week</div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Engagement</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="stat-value" id="engagement">High</div>
-                            <div class="stat-change positive">+8% from last week</div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Team Size</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="stat-value" id="teamSize">12</div>
-                            <div class="stat-change">Active members</div>
-                        </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="totalEntries">0</div>
+                        <div class="stat-label">Total Entries</div>
+                        <div class="stat-change neutral">Berdasarkan periode</div>
                     </div>
                 </div>
 
-                <!-- Charts and Insights -->
-                <div class="grid grid-cols-2">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Emotion Trends</h3>
-                            <div class="chart-controls">
-                                <button class="btn btn-sm" onclick="updateChartType('line')">Line</button>
-                                <button class="btn btn-sm" onclick="updateChartType('bar')">Bar</button>
-                                <button class="btn btn-sm" onclick="updateChartType('doughnut')">Doughnut</button>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="emotionChart" width="400" height="200"></canvas>
-                        </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-smile"></i>
                     </div>
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Quick Actions</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="quick-actions">
-                                <a href="emotion-input.html" class="btn btn-primary">
-                                    <i class="fas fa-camera"></i>
-                                    New Emotion Input
-                                </a>
-                                <a href="history.html" class="btn btn-secondary">
-                                    <i class="fas fa-history"></i>
-                                    View History
-                                </a>
-                                <a href="feedback.html" class="btn btn-outline">
-                                    <i class="fas fa-comments"></i>
-                                    Team Feedback
-                                </a>
-                                <a href="settings.html" class="btn btn-outline">
-                                    <i class="fas fa-cog"></i>
-                                    Settings
-                                </a>
+                    <div class="stat-content">
+                        <div class="stat-value" id="overallMood">Neutral</div>
+                        <div class="stat-label">Mood Terkini</div>
+                        <div class="stat-change neutral">Dari 10 entries terbaru</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="stressLevel">Low</div>
+                        <div class="stat-label">Tingkat Stress</div>
+                        <div class="stat-change neutral">Dari 10 entries terbaru</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="engagement">Low</div>
+                        <div class="stat-label">Tingkat Engagement</div>
+                        <div class="stat-change neutral">Berdasarkan frekuensi</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="dataQuality">Poor</div>
+                        <div class="stat-label">Kualitas Data</div>
+                        <div class="stat-change neutral">Dari 10 entries terbaru</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="activeUsers">0</div>
+                        <div class="stat-label">Pengguna Aktif</div>
+                        <div class="stat-change neutral">Berdasarkan periode</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-section">
+                <div class="chart-container">
+                    <h3><i class="fas fa-chart-bar"></i> Distribusi Emosi (10 Entries Terbaru)</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="emotionDistributionChart"></canvas>
+                    </div>
+                    <div class="chart-info">
+                        <p class="text-secondary text-center mt-2">
+                            <i class="fas fa-info-circle"></i> 
+                            Grafik menampilkan distribusi emosi dan rata-rata confidence dari 10 entries terbaru
+                        </p>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3><i class="fas fa-clock"></i> Aktivitas per Jam</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="timeAnalysisChart"></canvas>
+                    </div>
+                    <div class="chart-info">
+                        <p class="text-secondary text-center mt-2">
+                            <i class="fas fa-info-circle"></i> 
+                            Pola aktivitas berdasarkan jam dalam periode yang dipilih
+                        </p>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3><i class="fas fa-bullseye"></i> Confidence Score per Entry</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="confidenceChart"></canvas>
+                    </div>
+                    <div class="chart-info">
+                        <p class="text-secondary text-center mt-2">
+                            <i class="fas fa-info-circle"></i> 
+                            Tingkat kepercayaan sistem dalam mendeteksi emosi untuk setiap entry
+                        </p>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <h3><i class="fas fa-chart-line"></i> Trend Emosi per Hari</h3>
+                    <div class="chart-wrapper">
+                        <canvas id="emotionTrendChart"></canvas>
+                    </div>
+                    <div class="chart-info">
+                        <p class="text-secondary text-center mt-2">
+                            <i class="fas fa-info-circle"></i> 
+                            Perkembangan emosi dari waktu ke waktu berdasarkan tanggal
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Tables Section -->
+            <div class="data-section">
+                <div class="data-table-container">
+                    <h3><i class="fas fa-table"></i> Recent Entries (10 Terbaru)</h3>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Waktu</th>
+                                    <th>Emosi</th>
+                                    <th>Confidence</th>
+                                    <th>Sumber</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentEntriesBody">
+                                <tr>
+                                    <td colspan="5" class="text-center">Memuat data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-info">
+                        <p class="text-secondary text-center mt-2">
+                            <i class="fas fa-info-circle"></i> 
+                            Data ini digunakan untuk analisis grafik distribusi emosi di atas
+                        </p>
+                    </div>
+                </div>
+
+                <div class="activity-feed-container">
+                    <h3><i class="fas fa-rss"></i> Feed Aktivitas & Analisis</h3>
+                    <div class="activity-feed" id="activityFeed">
+                        <div class="activity-item">
+                            <div class="activity-icon">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-text">Memuat aktivitas dan analisis...</div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Activity Feed and Alerts -->
-                <div class="grid grid-cols-2">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Recent Activity</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="activity-feed" id="activityFeed">
-                                <!-- Activity items will be populated by JavaScript -->
-                            </div>
-                        </div>
+            <!-- Storage Status -->
+            <div class="storage-status">
+                <h3><i class="fas fa-database"></i> Status Penyimpanan</h3>
+                <div class="status-grid" id="storageStatus">
+                    <div class="status-item">
+                        <span class="status-label">Total Records:</span>
+                        <span class="status-value">Memuat...</span>
                     </div>
-                    <div class="card">
-                        <div class="card-header">
-                            <h3>Alerts & Insights</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="alerts-container" id="alertsContainer">
-                                <!-- Alerts will be populated by JavaScript -->
-                            </div>
-                        </div>
+                    <div class="status-item">
+                        <span class="status-label">Tipe Storage:</span>
+                        <span class="status-value">Memuat...</span>
                     </div>
+                    <div class="status-item">
+                        <span class="status-label">Update Terakhir:</span>
+                        <span class="status-value">Memuat...</span>
+                    </div>
+                </div>
+                <div class="storage-info">
+                    <p class="text-secondary text-center mt-2">
+                        <i class="fas fa-info-circle"></i> 
+                        Informasi sistem penyimpanan data emosi
+                    </p>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
-    <script src="js/sidebar.js"></script>
     <script src="js/dataStorage.js"></script>
+    <script src="js/hybridStorage.js"></script>
+    <script src="js/components/DataManager.js"></script>
     <script src="js/dashboard.js"></script>
+    <script src="js/dataImport.js"></script>
+    <script src="js/dashboardCRUD.js"></script>
+    <script src="js/data-services.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script>
+    // Data dummy untuk testing
+    const dummyData = [
+      { id: "1", timestamp: new Date(Date.now() - 3600 * 1000 * 2).toISOString(), dominantEmotion: "happy", confidence: 0.92, userId: "user1", source: "webcam" },
+      { id: "2", timestamp: new Date(Date.now() - 3600 * 1000 * 5).toISOString(), dominantEmotion: "sad", confidence: 0.81, userId: "user2", source: "microphone" },
+      { id: "3", timestamp: new Date(Date.now() - 3600 * 1000 * 8).toISOString(), dominantEmotion: "angry", confidence: 0.77, userId: "user3", source: "webcam" },
+      { id: "4", timestamp: new Date(Date.now() - 3600 * 1000 * 12).toISOString(), dominantEmotion: "neutral", confidence: 0.65, userId: "user1", source: "webcam" },
+      { id: "5", timestamp: new Date(Date.now() - 3600 * 1000 * 15).toISOString(), dominantEmotion: "happy", confidence: 0.88, userId: "user2", source: "microphone" },
+      { id: "6", timestamp: new Date(Date.now() - 3600 * 1000 * 20).toISOString(), dominantEmotion: "surprise", confidence: 0.73, userId: "user3", source: "webcam" },
+        { id: "7", timestamp: new Date(Date.now() - 3600 * 1000 * 22).toISOString(), dominantEmotion: "fear", confidence: 0.69, userId: "user1", source: "microphone" },
+        { id: "8", timestamp: new Date(Date.now() - 3600 * 1000 * 25).toISOString(), dominantEmotion: "disgust", confidence: 0.85, userId: "user2", source: "webcam" },
+        { id: "9", timestamp: new Date(Date.now() - 3600 * 1000 * 28).toISOString(), dominantEmotion: "happy", confidence: 0.91, userId: "user3", source: "microphone" },
+        { id: "10", timestamp: new Date(Date.now() - 3600 * 1000 * 30).toISOString(), dominantEmotion: "neutral", confidence: 0.72, userId: "user1", source: "webcam" }
+    ];
+
+    // Fungsi untuk memasukkan data dummy
+    async function insertDummyData() {
+        try {
+        // Tunggu hybridStorage/dataStorage siap
+        function waitForStorage() {
+            return new Promise(resolve => {
+                function check() {
+                        if (window.hybridStorage && (window.hybridStorage.addEmotionData || window.hybridStorage.saveEmotionData)) {
+                            return resolve(window.hybridStorage);
+                        }
+                        if (window.dataStorage && (window.dataStorage.addEmotionData || window.dataStorage.saveEmotionData)) {
+                            return resolve(window.dataStorage);
+                        }
+                    setTimeout(check, 100);
+                }
+                check();
+            });
+        }
+            
+        const storage = await waitForStorage();
+            
+            // Tentukan method yang tersedia
+            const saveMethod = storage.addEmotionData || storage.saveEmotionData;
+            if (!saveMethod) {
+                throw new Error('Tidak ada method save yang tersedia');
+            }
+            
+            console.log('Inserting dummy data using method:', saveMethod.name);
+            
+        // Masukkan data satu per satu (hindari duplikat id)
+        for (const entry of dummyData) {
+                console.log(`Inserting entry: ${entry.id}`);
+                await saveMethod.call(storage, entry);
+        }
+            
+            // Refresh dashboard
+            if (window.dashboard && window.dashboard.refreshData) {
+                window.dashboard.refreshData();
+            }
+            
+            // Tampilkan pesan sukses
+        if (window.dashboard && window.dashboard.showSuccess) {
+                window.dashboard.showSuccess('Data dummy berhasil dimasukkan! Grafik akan diperbarui.');
+            } else {
+                alert('Data dummy berhasil dimasukkan! Grafik akan diperbarui.');
+            }
+        } catch (error) {
+            console.error('Error inserting dummy data:', error);
+            if (window.dashboard && window.dashboard.showError) {
+                window.dashboard.showError('Gagal memasukkan data dummy: ' + error.message);
+        } else {
+                alert('Gagal memasukkan data dummy: ' + error.message);
+            }
+        }
+    }
+
+    // Event listener untuk tombol dummy data
+    document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('fillDummyDataBtn');
+        if (btn) {
+            btn.addEventListener('click', insertDummyData);
+        }
+        
+        // Auto-insert dummy data if no data exists (for demo purposes)
+        setTimeout(async () => {
+            try {
+                const storage = window.hybridStorage || window.dataStorage;
+                if (storage && storage.getAllEmotionData) {
+                    const existingData = await storage.getAllEmotionData();
+                    if (existingData.length === 0) {
+                        console.log('No data found, inserting dummy data for demo...');
+                        await insertDummyData();
+                    }
+                }
+            } catch (error) {
+                console.log('Could not check for existing data:', error);
+            }
+        }, 2000);
+    });
+    </script>
 </body>
 </html>

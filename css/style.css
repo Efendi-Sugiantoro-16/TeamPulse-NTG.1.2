@@ -401,58 +401,6 @@ body {
     display: block;
 }
 
-.hero-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-}
-
-.floating-card {
-    position: absolute;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--gray-700);
-    animation: float 6s ease-in-out infinite;
-}
-
-.floating-card i {
-    color: var(--primary-color);
-}
-
-.card-1 {
-    top: 20%;
-    left: -10%;
-    animation-delay: 0s;
-}
-
-.card-2 {
-    top: 50%;
-    right: -10%;
-    animation-delay: 2s;
-}
-
-.card-3 {
-    bottom: 20%;
-    left: 10%;
-    animation-delay: 4s;
-}
-
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-
 .hero-wave {
     position: absolute;
     bottom: 0;
@@ -929,10 +877,6 @@ body {
         flex-direction: column;
         text-align: center;
         gap: var(--space-4);
-    }
-    
-    .floating-card {
-        display: none;
     }
 }
 

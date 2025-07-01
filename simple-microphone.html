@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Microphone Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        
+        .audio-meter {
+            background: #333;
+            height: 30px;
+            border-radius: 15px;
+            margin: 20px 0;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .audio-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #FF9800, #f44336);
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+        
+        .spectrogram {
+            background: #000;
+            border: 2px solid #333;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .start-btn {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .stop-btn {
+            background: #f44336;
+            color: white;
+        }
+        
+        .play-btn {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .download-btn {
+            background: #FF9800;
+            color: white;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .status {
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .level-display {
+            text-align: center;
+            font-family: monospace;
+            font-size: 18px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Simple Microphone Test</h1>
+        
+        <div class="status" id="status">Click "Start Recording" to begin</div>
+        
+        <div class="level-display" id="levelDisplay">Audio Level: -∞ dB</div>
+        
+        <div class="audio-meter">
+            <div class="audio-fill" id="audioFill"></div>
+        </div>
+        
+        <canvas id="spectrogramCanvas" class="spectrogram" width="400" height="200"></canvas>
+        
+        <div class="controls">
+            <button class="start-btn" id="startBtn">Start Recording</button>
+            <button class="stop-btn" id="stopBtn" disabled>Stop Recording</button>
+            <button class="play-btn" id="playBtn" disabled>Play Recording</button>
+            <button class="download-btn" id="downloadBtn" disabled>Download</button>
+        </div>
+    </div>
+
+    <script>
+        class SimpleMicrophone {
+            constructor() {
+                this.audioContext = null;
+                this.analyser = null;
+                this.mediaStream = null;
+                this.isRecording = false;
+                this.mediaRecorder = null;
+                this.audioChunks = [];
+                this.recordedAudio = null;
+                
+                // Spectrogram
+                this.spectrogramCanvas = document.getElementById('spectrogramCanvas');
+                this.spectrogramCtx = this.spectrogramCanvas.getContext('2d');
+                this.spectrogramData = [];
+                this.maxSpectrogramLength = 200;
+                
+                this.initialize();
+            }
+            
+            async initialize() {
+                try {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.analyser = this.audioContext.createAnalyser();
+                    this.analyser.fftSize = 2048;
+                    this.analyser.smoothingTimeConstant = 0.8;
+                    
+                    this.clearSpectrogram();
+                    this.updateStatus('Ready to record');
+                } catch (error) {
+                    this.updateStatus('Failed to initialize: ' + error.message);
+                }
+            }
+            
+            clearSpectrogram() {
+                this.spectrogramCtx.fillStyle = '#000';
+                this.spectrogramCtx.fillRect(0, 0, this.spectrogramCanvas.width, this.spectrogramCanvas.height);
+            }
+            
+            async startRecording() {
+                try {
+                    this.mediaStream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            sampleRate: 44100,
+                            channelCount: 1,
+                            echoCancellation: true,
+                            noiseSuppression: true
+                        }
+                    });
+                    
+                    const source = this.audioContext.createMediaStreamSource(this.mediaStream);
+                    source.connect(this.analyser);
+                    
+                    this.mediaRecorder = new MediaRecorder(this.mediaStream);
+                    this.audioChunks = [];
+                    
+                    this.mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            this.audioChunks.push(event.data);
+                        }
+                    };
+                    
+                    this.mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
+                        this.recordedAudio = URL.createObjectURL(audioBlob);
+                        this.updateStatus('Recording completed');
+                        this.updateButtons();
+                    };
+                    
+                    this.mediaRecorder.start();
+                    this.isRecording = true;
+                    this.startAnalysisLoop();
+                    
+                    this.updateStatus('Recording...');
+                    this.updateButtons();
+                } catch (error) {
+                    this.updateStatus('Failed to start recording: ' + error.message);
+                }
+            }
+            
+            stopRecording() {
+                if (!this.isRecording) return;
+                
+                this.isRecording = false;
+                
+                if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+                    this.mediaRecorder.stop();
+                }
+                
+                if (this.mediaStream) {
+                    this.mediaStream.getTracks().forEach(track => track.stop());
+                    this.mediaStream = null;
+                }
+                
+                this.updateStatus('Recording stopped');
+                this.updateButtons();
+            }
+            
+            startAnalysisLoop() {
+                const analyze = () => {
+                    if (!this.isRecording) return;
+                    
+                    this.updateSpectrogram();
+                    this.updateAudioLevel();
+                    requestAnimationFrame(analyze);
+                };
+                
+                analyze();
+            }
+            
+            updateSpectrogram() {
+                const bufferLength = this.analyser.frequencyBinCount;
+                const frequencyData = new Float32Array(bufferLength);
+                this.analyser.getFloatFrequencyData(frequencyData);
+                
+                this.spectrogramData.push(frequencyData);
+                if (this.spectrogramData.length > this.maxSpectrogramLength) {
+                    this.spectrogramData.shift();
+                }
+                
+                this.clearSpectrogram();
+                
+                const sliceWidth = this.spectrogramCanvas.width / this.spectrogramData.length;
+                const binHeight = this.spectrogramCanvas.height / frequencyData.length;
+                
+                for (let i = 0; i < this.spectrogramData.length; i++) {
+                    const slice = this.spectrogramData[i];
+                    const x = i * sliceWidth;
+                    
+                    for (let j = 0; j < slice.length; j++) {
+                        const y = this.spectrogramCanvas.height - (j * binHeight);
+                        const magnitude = (slice[j] + 140) / 140;
+                        const intensity = Math.max(0, Math.min(1, magnitude));
+                        
+                        const hue = (j / slice.length) * 360;
+                        const saturation = 100;
+                        const lightness = 50 + (intensity * 50);
+                        
+                        this.spectrogramCtx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                        this.spectrogramCtx.fillRect(x, y, sliceWidth, binHeight);
+                    }
+                }
+            }
+            
+            updateAudioLevel() {
+                const bufferLength = this.analyser.frequencyBinCount;
+                const timeData = new Float32Array(bufferLength);
+                this.analyser.getFloatTimeDomainData(timeData);
+                
+                let sum = 0;
+                for (let i = 0; i < timeData.length; i++) {
+                    sum += timeData[i] * timeData[i];
+                }
+                const rms = Math.sqrt(sum / timeData.length);
+                const level = 20 * Math.log10(rms);
+                
+                // Update UI
+                const fill = document.getElementById('audioFill');
+                const levelDisplay = document.getElementById('levelDisplay');
+                
+                const normalizedLevel = Math.max(0, Math.min(100, (level + 60) * 1.67));
+                fill.style.width = `${normalizedLevel}%`;
+                levelDisplay.textContent = `Audio Level: ${level.toFixed(1)} dB`;
+            }
+            
+            playRecording() {
+                if (!this.recordedAudio) return;
+                
+                const audio = new Audio(this.recordedAudio);
+                audio.play().catch(error => {
+                    this.updateStatus('Failed to play recording: ' + error.message);
+                });
+            }
+            
+            downloadRecording() {
+                if (!this.recordedAudio) return;
+                
+                const link = document.createElement('a');
+                link.href = this.recordedAudio;
+                link.download = `recording-${new Date().toISOString().split('T')[0]}.wav`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+            
+            updateStatus(message) {
+                document.getElementById('status').textContent = message;
+            }
+            
+            updateButtons() {
+                document.getElementById('startBtn').disabled = this.isRecording;
+                document.getElementById('stopBtn').disabled = !this.isRecording;
+                document.getElementById('playBtn').disabled = !this.recordedAudio;
+                document.getElementById('downloadBtn').disabled = !this.recordedAudio;
+            }
+        }
+        
+        // Initialize
+        let microphone;
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            microphone = new SimpleMicrophone();
+            
+            document.getElementById('startBtn').addEventListener('click', () => {
+                microphone.startRecording();
+            });
+            
+            document.getElementById('stopBtn').addEventListener('click', () => {
+                microphone.stopRecording();
+            });
+            
+            document.getElementById('playBtn').addEventListener('click', () => {
+                microphone.playRecording();
+            });
+            
+            document.getElementById('downloadBtn').addEventListener('click', () => {
+                microphone.downloadRecording();
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -5,569 +5,380 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings - TeamPulse</title>
     <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/sidebar.css">
     <link rel="stylesheet" href="css/settings.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <div class="dashboard-container">
-        <!-- Sidebar -->
-        <aside id="sidebar" class="sidebar">
-            <div class="sidebar-header">
-                <h2>TeamPulse</h2>
-                <button id="sidebarClose" class="sidebar-close" aria-label="Close sidebar">
-                    <i class="fas fa-times"></i>
-                </button>
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h2>TeamPulse</h2>
+            <button id="sidebarClose" class="sidebar-close" aria-label="Close sidebar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
+                <li><a href="emotion-input.html"><i class="fas fa-camera"></i>Emotion Input</a></li>
+                <li><a href="history.html"><i class="fas fa-history"></i>History</a></li>
+                <li><a href="feedback.html"><i class="fas fa-comments"></i>Feedback</a></li>
+                <li><a href="settings.html" class="active"><i class="fas fa-cog"></i>Settings</a></li>
+                <li><a href="index.html"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Mobile Menu Toggle -->
+    <button id="menuToggle" class="menu-toggle" aria-label="Toggle navigation menu">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Main Settings Container -->
+    <div class="settings-container">
+        <!-- Section Header -->
+        <div class="section-header">
+            <h2>Settings & Preferences</h2>
+            <p>Customize your TeamPulse experience and manage your account</p>
+        </div>
+
+        <!-- Settings Navigation -->
+        <div class="settings-nav">
+            <button class="settings-tab active" data-tab="profile">
+                <i class="fas fa-user"></i>
+                Profile
+            </button>
+            <button class="settings-tab" data-tab="notifications">
+                <i class="fas fa-bell"></i>
+                Notifications
+            </button>
+            <button class="settings-tab" data-tab="privacy">
+                <i class="fas fa-shield-alt"></i>
+                Privacy & Security
+            </button>
+            <button class="settings-tab" data-tab="appearance">
+                <i class="fas fa-palette"></i>
+                Appearance
+            </button>
+            <button class="settings-tab" data-tab="data">
+                <i class="fas fa-database"></i>
+                Data & Export
+            </button>
+        </div>
+
+        <!-- Settings Content -->
+        <div class="settings-content">
+            <!-- Profile Settings Panel -->
+            <div class="settings-panel active" id="profile-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Profile Information</h3>
+                        <p>Update your personal information and profile picture</p>
+                    </div>
+                    <div class="card-body">
+                        <form id="profileForm" class="settings-form">
+                            <div class="profile-picture-section">
+                                <div class="profile-picture">
+                                    <img src="https://via.placeholder.com/120" alt="Profile Picture" id="profileImage">
+                                </div>
+                                <div>
+                                    <input type="file" id="profile-upload" accept="image/*" style="display: none;">
+                                    <button type="button" class="btn btn-outline" onclick="document.getElementById('profile-upload').click()">
+                                        <i class="fas fa-camera"></i>
+                                        Change Photo
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="name" class="form-label">Full Name</label>
+                                    <input type="text" id="name" name="name" class="form-input" value="John Doe" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="email" class="form-label">Email Address</label>
+                                    <input type="email" id="email" name="email" class="form-input" value="john.doe@example.com" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone" class="form-label">Phone Number</label>
+                                    <input type="tel" id="phone" name="phone" class="form-input" value="+62 812-3456-7890">
+                                </div>
+                                <div class="form-group">
+                                    <label for="location" class="form-label">Location</label>
+                                    <input type="text" id="location" name="location" class="form-input" value="Jakarta, Indonesia">
+                                </div>
+                                <div class="form-group">
+                                    <label for="timezone" class="form-label">Timezone</label>
+                                    <select id="timezone" name="timezone" class="form-select">
+                                        <option value="Asia/Jakarta" selected>Asia/Jakarta (GMT+7)</option>
+                                        <option value="Asia/Singapore">Asia/Singapore (GMT+8)</option>
+                                        <option value="Asia/Tokyo">Asia/Tokyo (GMT+9)</option>
+                                        <option value="UTC">UTC (GMT+0)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="language" class="form-label">Language</label>
+                                    <select id="language" name="language" class="form-select">
+                                        <option value="id" selected>Bahasa Indonesia</option>
+                                        <option value="en">English</option>
+                                        <option value="ja">日本語</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="bio" class="form-label">Bio</label>
+                                <textarea id="bio" name="bio" class="form-textarea" rows="4" placeholder="Tell us about yourself...">Software Developer passionate about creating amazing user experiences.</textarea>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    Save Changes
+                                </button>
+                                <button type="button" class="btn btn-outline">
+                                    <i class="fas fa-undo"></i>
+                                    Reset
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
-            <nav>
-                <ul>
-                    <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
-                    <li><a href="emotion-input.html"><i class="fas fa-camera"></i>Emotion Input</a></li>
-                    <li><a href="history.html"><i class="fas fa-history"></i>History</a></li>
-                    <li><a href="feedback.html"><i class="fas fa-comments"></i>Feedback</a></li>
-                    <li><a href="settings.html" class="active"><i class="fas fa-cog"></i>Settings</a></li>
-                    <li><a href="index.html"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
-                </ul>
-            </nav>
-        </aside>
 
-        <!-- Mobile Menu Toggle -->
-        <button id="menuToggle" class="menu-toggle" aria-label="Toggle navigation menu">
-            <i class="fas fa-bars"></i>
-        </button>
-
-        <!-- Sidebar Overlay -->
-        <div id="sidebarOverlay" class="sidebar-overlay"></div>
-
-        <!-- Main Content Area -->
-        <div class="content-area">
-            <div class="main-content">
-                <!-- Section Header -->
-                <div class="section-header">
-                    <h2>Settings & Preferences</h2>
-                    <p>Customize your TeamPulse experience and manage your account</p>
+            <!-- Notifications Settings Panel -->
+            <div class="settings-panel" id="notifications-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Notification Preferences</h3>
+                        <p>Choose how and when you want to be notified</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="notification-group">
+                            <h4>Email Notifications</h4>
+                            <div class="notification-item">
+                                <div class="notification-info">
+                                    <h5>Weekly Reports</h5>
+                                    <p>Receive weekly emotion analysis reports</p>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" class="notification-toggle" data-notification="weekly" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="notification-item">
+                                <div class="notification-info">
+                                    <h5>Team Updates</h5>
+                                    <p>Get notified about team mood changes</p>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" class="notification-toggle" data-notification="team" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="notification-item">
+                                <div class="notification-info">
+                                    <h5>Feedback Alerts</h5>
+                                    <p>Receive notifications for new feedback</p>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" class="notification-toggle" data-notification="feedback">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="notification-group">
+                            <h4>Push Notifications</h4>
+                            <div class="notification-item">
+                                <div class="notification-info">
+                                    <h5>Daily Reminders</h5>
+                                    <p>Remind me to check in with my emotions</p>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" class="notification-toggle" data-notification="daily" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="notification-item">
+                                <div class="notification-info">
+                                    <h5>Stress Alerts</h5>
+                                    <p>Alert me when stress levels are high</p>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" class="notification-toggle" data-notification="stress" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                Save Notifications
+                            </button>
+                        </div>
+                    </div>
                 </div>
+            </div>
 
-                <!-- Settings Navigation -->
-                <div class="settings-nav">
-                    <button class="settings-tab active" data-tab="profile">
-                        <i class="fas fa-user"></i>
-                        Profile
-                    </button>
-                    <button class="settings-tab" data-tab="notifications">
-                        <i class="fas fa-bell"></i>
-                        Notifications
-                    </button>
-                    <button class="settings-tab" data-tab="privacy">
-                        <i class="fas fa-shield-alt"></i>
-                        Privacy & Security
-                    </button>
-                    <button class="settings-tab" data-tab="appearance">
-                        <i class="fas fa-palette"></i>
-                        Appearance
-                    </button>
-                    <button class="settings-tab" data-tab="data">
-                        <i class="fas fa-database"></i>
-                        Data & Export
-                    </button>
-                    <button class="settings-tab" data-tab="team">
-                        <i class="fas fa-users"></i>
-                        Team Settings
-                    </button>
+            <!-- Privacy & Security Settings Panel -->
+            <div class="settings-panel" id="privacy-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Privacy & Security</h3>
+                        <p>Manage your privacy settings and account security</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="privacy-group">
+                            <h4>Data Privacy</h4>
+                            <div class="privacy-item">
+                                <div class="privacy-info">
+                                    <h5>Share Emotion Data</h5>
+                                    <p>Allow team members to see your emotion trends</p>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" class="privacy-toggle" data-privacy="shareData" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="privacy-item">
+                                <div class="privacy-info">
+                                    <h5>Anonymous Mode</h5>
+                                    <p>Share data anonymously with the team</p>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" class="privacy-toggle" data-privacy="anonymous">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="privacy-item">
+                                <div class="privacy-info">
+                                    <h5>Data Retention</h5>
+                                    <p>Keep my data for analysis purposes</p>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" class="privacy-toggle" data-privacy="dataRetention" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="privacy-group">
+                            <h4>Account Security</h4>
+                            <div class="form-group">
+                                <label for="current-password" class="form-label">Current Password</label>
+                                <input type="password" id="current-password" class="form-input" placeholder="Enter current password">
+                            </div>
+                            <div class="form-group">
+                                <label for="new-password" class="form-label">New Password</label>
+                                <input type="password" id="new-password" class="form-input" placeholder="Enter new password">
+                                <div id="password-strength" class="password-strength"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="confirm-password" class="form-label">Confirm New Password</label>
+                                <input type="password" id="confirm-password" class="form-input" placeholder="Confirm new password">
+                            </div>
+                            <button id="change-password-btn" class="btn btn-primary">
+                                <i class="fas fa-key"></i>
+                                Change Password
+                            </button>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                Save Privacy Settings
+                            </button>
+                        </div>
+                    </div>
                 </div>
+            </div>
 
-                <!-- Settings Content -->
-                <div class="settings-content">
-                    <!-- Profile Settings -->
-                    <div class="settings-panel active" id="profile">
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>Profile Information</h3>
-                                <p>Update your personal information and profile picture</p>
-                            </div>
-                            <div class="card-body">
-                                <form id="profileForm" class="settings-form">
-                                    <div class="profile-picture-section">
-                                        <div class="profile-picture">
-                                            <img src="https://via.placeholder.com/120" alt="Profile Picture" id="profileImage">
-                                            <div class="profile-picture-overlay">
-                                                <button type="button" id="changePicture" class="btn btn-sm btn-primary">
-                                                    <i class="fas fa-camera"></i>
-                                                    Change Picture
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <input type="file" id="profilePictureInput" accept="image/*" style="display: none;">
-                                    </div>
-                                    
-                                    <div class="form-grid">
-                                        <div class="form-group">
-                                            <label for="firstName" class="form-label">First Name</label>
-                                            <input type="text" id="firstName" class="form-input" value="John" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="lastName" class="form-label">Last Name</label>
-                                            <input type="text" id="lastName" class="form-input" value="Doe" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="email" class="form-label">Email Address</label>
-                                            <input type="email" id="email" class="form-input" value="john.doe@example.com" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="phone" class="form-label">Phone Number</label>
-                                            <input type="tel" id="phone" class="form-input" value="+1 (555) 123-4567">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="jobTitle" class="form-label">Job Title</label>
-                                            <input type="text" id="jobTitle" class="form-input" value="Software Developer">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="department" class="form-label">Department</label>
-                                            <select id="department" class="form-select">
-                                                <option value="engineering">Engineering</option>
-                                                <option value="design">Design</option>
-                                                <option value="marketing">Marketing</option>
-                                                <option value="sales">Sales</option>
-                                                <option value="hr">Human Resources</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="bio" class="form-label">Bio</label>
-                                        <textarea id="bio" class="form-textarea" rows="4" placeholder="Tell us about yourself...">Passionate software developer with 5+ years of experience in web development and team collaboration.</textarea>
-                                    </div>
-                                    
-                                    <div class="form-actions">
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="fas fa-save"></i>
-                                            Save Changes
-                                        </button>
-                                        <button type="button" class="btn btn-outline">
-                                            <i class="fas fa-undo"></i>
-                                            Reset
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
+            <!-- Appearance Settings Panel -->
+            <div class="settings-panel" id="appearance-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Appearance & Theme</h3>
+                        <p>Customize the look and feel of TeamPulse</p>
                     </div>
-
-                    <!-- Notifications Settings -->
-                    <div class="settings-panel" id="notifications">
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>Notification Preferences</h3>
-                                <p>Choose how and when you want to be notified</p>
-                            </div>
-                            <div class="card-body">
-                                <div class="notification-settings">
-                                    <div class="notification-group">
-                                        <h4>Email Notifications</h4>
-                                        <div class="notification-item">
-                                            <div class="notification-info">
-                                                <h5>Weekly Reports</h5>
-                                                <p>Receive weekly emotion analysis reports</p>
-                                            </div>
-                                            <label class="switch">
-                                                <input type="checkbox" checked>
-                                                <span class="slider"></span>
-                                            </label>
-                                        </div>
-                                        <div class="notification-item">
-                                            <div class="notification-info">
-                                                <h5>Team Updates</h5>
-                                                <p>Get notified about team mood changes</p>
-                                            </div>
-                                            <label class="switch">
-                                                <input type="checkbox" checked>
-                                                <span class="slider"></span>
-                                            </label>
-                                        </div>
-                                        <div class="notification-item">
-                                            <div class="notification-info">
-                                                <h5>Feedback Alerts</h5>
-                                                <p>Receive notifications for new feedback</p>
-                                            </div>
-                                            <label class="switch">
-                                                <input type="checkbox">
-                                                <span class="slider"></span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="notification-group">
-                                        <h4>Push Notifications</h4>
-                                        <div class="notification-item">
-                                            <div class="notification-info">
-                                                <h5>Daily Reminders</h5>
-                                                <p>Remind me to check in with my emotions</p>
-                                            </div>
-                                            <label class="switch">
-                                                <input type="checkbox" checked>
-                                                <span class="slider"></span>
-                                            </label>
-                                        </div>
-                                        <div class="notification-item">
-                                            <div class="notification-info">
-                                                <h5>Stress Alerts</h5>
-                                                <p>Alert me when stress levels are high</p>
-                                            </div>
-                                            <label class="switch">
-                                                <input type="checkbox" checked>
-                                                <span class="slider"></span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="notification-group">
-                                        <h4>Reminder Schedule</h4>
-                                        <div class="form-group">
-                                            <label for="reminderTime" class="form-label">Daily Reminder Time</label>
-                                            <input type="time" id="reminderTime" class="form-input" value="09:00">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="reminderDays" class="form-label">Reminder Days</label>
-                                            <div class="checkbox-group">
-                                                <label class="checkbox-item">
-                                                    <input type="checkbox" checked> Monday
-                                                </label>
-                                                <label class="checkbox-item">
-                                                    <input type="checkbox" checked> Tuesday
-                                                </label>
-                                                <label class="checkbox-item">
-                                                    <input type="checkbox" checked> Wednesday
-                                                </label>
-                                                <label class="checkbox-item">
-                                                    <input type="checkbox" checked> Thursday
-                                                </label>
-                                                <label class="checkbox-item">
-                                                    <input type="checkbox" checked> Friday
-                                                </label>
-                                                <label class="checkbox-item">
-                                                    <input type="checkbox"> Saturday
-                                                </label>
-                                                <label class="checkbox-item">
-                                                    <input type="checkbox"> Sunday
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
+                    <div class="card-body">
+                        <div class="theme-group">
+                            <h4>Theme Selection</h4>
+                            <div class="theme-options">
+                                <div class="theme-option active" data-theme="light">
+                                    <div class="theme-preview light"></div>
+                                    <span>Light</span>
+                                </div>
+                                <div class="theme-option" data-theme="dark">
+                                    <div class="theme-preview dark"></div>
+                                    <span>Dark</span>
+                                </div>
+                                <div class="theme-option" data-theme="auto">
+                                    <div class="theme-preview auto"></div>
+                                    <span>Auto</span>
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Privacy & Security Settings -->
-                    <div class="settings-panel" id="privacy">
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>Privacy & Security</h3>
-                                <p>Manage your privacy settings and account security</p>
-                            </div>
-                            <div class="card-body">
-                                <div class="privacy-settings">
-                                    <div class="privacy-group">
-                                        <h4>Data Privacy</h4>
-                                        <div class="privacy-item">
-                                            <div class="privacy-info">
-                                                <h5>Share Emotion Data</h5>
-                                                <p>Allow team members to see your emotion trends</p>
-                                            </div>
-                                            <label class="switch">
-                                                <input type="checkbox" checked>
-                                                <span class="slider"></span>
-                                            </label>
-                                        </div>
-                                        <div class="privacy-item">
-                                            <div class="privacy-info">
-                                                <h5>Anonymous Mode</h5>
-                                                <p>Share data anonymously with the team</p>
-                                            </div>
-                                            <label class="switch">
-                                                <input type="checkbox">
-                                                <span class="slider"></span>
-                                            </label>
-                                        </div>
-                                        <div class="privacy-item">
-                                            <div class="privacy-info">
-                                                <h5>Data Retention</h5>
-                                                <p>Keep my data for analysis purposes</p>
-                                            </div>
-                                            <label class="switch">
-                                                <input type="checkbox" checked>
-                                                <span class="slider"></span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="privacy-group">
-                                        <h4>Account Security</h4>
-                                        <div class="form-group">
-                                            <label for="currentPassword" class="form-label">Current Password</label>
-                                            <input type="password" id="currentPassword" class="form-input" placeholder="Enter current password">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="newPassword" class="form-label">New Password</label>
-                                            <input type="password" id="newPassword" class="form-input" placeholder="Enter new password">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="confirmPassword" class="form-label">Confirm New Password</label>
-                                            <input type="password" id="confirmPassword" class="form-input" placeholder="Confirm new password">
-                                        </div>
-                                        <button class="btn btn-primary">
-                                            <i class="fas fa-key"></i>
-                                            Change Password
-                                        </button>
-                                    </div>
-                                    
-                                    <div class="privacy-group">
-                                        <h4>Two-Factor Authentication</h4>
-                                        <div class="privacy-item">
-                                            <div class="privacy-info">
-                                                <h5>Enable 2FA</h5>
-                                                <p>Add an extra layer of security to your account</p>
-                                            </div>
-                                            <label class="switch">
-                                                <input type="checkbox">
-                                                <span class="slider"></span>
-                                            </label>
-                                        </div>
-                                        <button class="btn btn-outline">
-                                            <i class="fas fa-qrcode"></i>
-                                            Setup 2FA
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                Apply Theme
+                            </button>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Appearance Settings -->
-                    <div class="settings-panel" id="appearance">
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>Appearance & Theme</h3>
-                                <p>Customize the look and feel of TeamPulse</p>
-                            </div>
-                            <div class="card-body">
-                                <div class="appearance-settings">
-                                    <div class="theme-group">
-                                        <h4>Theme Selection</h4>
-                                        <div class="theme-options">
-                                            <div class="theme-option active">
-                                                <div class="theme-preview light"></div>
-                                                <span>Light</span>
-                                            </div>
-                                            <div class="theme-option">
-                                                <div class="theme-preview dark"></div>
-                                                <span>Dark</span>
-                                            </div>
-                                            <div class="theme-option">
-                                                <div class="theme-preview auto"></div>
-                                                <span>Auto</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="color-group">
-                                        <h4>Accent Color</h4>
-                                        <div class="color-options">
-                                            <div class="color-option active" data-color="#667eea">
-                                                <div class="color-preview" style="background: #667eea;"></div>
-                                            </div>
-                                            <div class="color-option" data-color="#10b981">
-                                                <div class="color-preview" style="background: #10b981;"></div>
-                                            </div>
-                                            <div class="color-option" data-color="#f59e0b">
-                                                <div class="color-preview" style="background: #f59e0b;"></div>
-                                            </div>
-                                            <div class="color-option" data-color="#ef4444">
-                                                <div class="color-preview" style="background: #ef4444;"></div>
-                                            </div>
-                                            <div class="color-option" data-color="#8b5cf6">
-                                                <div class="color-preview" style="background: #8b5cf6;"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="layout-group">
-                                        <h4>Layout Preferences</h4>
-                                        <div class="form-group">
-                                            <label for="sidebarPosition" class="form-label">Sidebar Position</label>
-                                            <select id="sidebarPosition" class="form-select">
-                                                <option value="left" selected>Left</option>
-                                                <option value="right">Right</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="sidebarWidth" class="form-label">Sidebar Width</label>
-                                            <select id="sidebarWidth" class="form-select">
-                                                <option value="compact">Compact</option>
-                                                <option value="normal" selected>Normal</option>
-                                                <option value="wide">Wide</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
+            <!-- Data & Export Settings Panel -->
+            <div class="settings-panel" id="data-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Data Management</h3>
+                        <p>Manage your data and export options</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="data-group">
+                            <h4>Data Export</h4>
+                            <p>Download your emotion data and analysis reports</p>
+                            <div class="export-options">
+                                <button class="btn btn-primary export-btn" data-export="all">
+                                    <i class="fas fa-download"></i>
+                                    Export All Data
+                                </button>
+                                <button class="btn btn-secondary export-btn" data-export="csv">
+                                    <i class="fas fa-file-csv"></i>
+                                    Export as CSV
+                                </button>
+                                <button class="btn btn-outline export-btn" data-export="pdf">
+                                    <i class="fas fa-file-pdf"></i>
+                                    Export Report
+                                </button>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Data & Export Settings -->
-                    <div class="settings-panel" id="data">
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>Data Management</h3>
-                                <p>Manage your data and export options</p>
-                            </div>
-                            <div class="card-body">
-                                <div class="data-settings">
-                                    <div class="data-group">
-                                        <h4>Data Export</h4>
-                                        <p>Download your emotion data and analysis reports</p>
-                                        <div class="export-options">
-                                            <button class="btn btn-primary">
-                                                <i class="fas fa-download"></i>
-                                                Export All Data
-                                            </button>
-                                            <button class="btn btn-secondary">
-                                                <i class="fas fa-file-csv"></i>
-                                                Export as CSV
-                                            </button>
-                                            <button class="btn btn-outline">
-                                                <i class="fas fa-file-pdf"></i>
-                                                Export Report
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="data-group">
-                                        <h4>Data Deletion</h4>
-                                        <p>Permanently delete your data from TeamPulse</p>
-                                        <div class="deletion-options">
-                                            <button class="btn btn-outline">
-                                                <i class="fas fa-trash"></i>
-                                                Delete Emotion Data
-                                            </button>
-                                            <button class="btn btn-danger">
-                                                <i class="fas fa-user-times"></i>
-                                                Delete Account
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="data-group">
-                                        <h4>Data Backup</h4>
-                                        <p>Automatically backup your data</p>
-                                        <div class="backup-options">
-                                            <div class="form-group">
-                                                <label class="checkbox-item">
-                                                    <input type="checkbox" checked> Enable automatic backups
-                                                </label>
-                                            </div>
-                                            <div class="form-group">
-                                                <label for="backupFrequency" class="form-label">Backup Frequency</label>
-                                                <select id="backupFrequency" class="form-select">
-                                                    <option value="daily">Daily</option>
-                                                    <option value="weekly" selected>Weekly</option>
-                                                    <option value="monthly">Monthly</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                        
+                        <div class="data-group">
+                            <h4>Data Deletion</h4>
+                            <p>Permanently delete your data from TeamPulse</p>
+                            <div class="deletion-options">
+                                <button class="btn btn-outline">
+                                    <i class="fas fa-trash"></i>
+                                    Delete Emotion Data
+                                </button>
+                                <button id="delete-account-btn" class="btn btn-danger">
+                                    <i class="fas fa-user-times"></i>
+                                    Delete Account
+                                </button>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Team Settings -->
-                    <div class="settings-panel" id="team">
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>Team Settings</h3>
-                                <p>Manage team preferences and permissions</p>
-                            </div>
-                            <div class="card-body">
-                                <div class="team-settings">
-                                    <div class="team-group">
-                                        <h4>Team Information</h4>
-                                        <div class="form-group">
-                                            <label for="teamName" class="form-label">Team Name</label>
-                                            <input type="text" id="teamName" class="form-input" value="Development Team">
-                                        </div>
-                                        <div class="form-group">
-                                            <label for="teamDescription" class="form-label">Team Description</label>
-                                            <textarea id="teamDescription" class="form-textarea" rows="3">Our development team focuses on creating innovative solutions.</textarea>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="team-group">
-                                        <h4>Team Members</h4>
-                                        <div class="team-members">
-                                            <div class="team-member">
-                                                <img src="https://via.placeholder.com/40" alt="John Doe">
-                                                <div class="member-info">
-                                                    <div class="member-name">John Doe</div>
-                                                    <div class="member-role">Team Lead</div>
-                                                </div>
-                                                <div class="member-actions">
-                                                    <button class="btn btn-sm btn-outline">Edit</button>
-                                                    <button class="btn btn-sm btn-danger">Remove</button>
-                                                </div>
-                                            </div>
-                                            <div class="team-member">
-                                                <img src="https://via.placeholder.com/40" alt="Jane Smith">
-                                                <div class="member-info">
-                                                    <div class="member-name">Jane Smith</div>
-                                                    <div class="member-role">Developer</div>
-                                                </div>
-                                                <div class="member-actions">
-                                                    <button class="btn btn-sm btn-outline">Edit</button>
-                                                    <button class="btn btn-sm btn-danger">Remove</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <button class="btn btn-primary">
-                                            <i class="fas fa-plus"></i>
-                                            Add Member
-                                        </button>
-                                    </div>
-                                    
-                                    <div class="team-group">
-                                        <h4>Team Permissions</h4>
-                                        <div class="permission-item">
-                                            <div class="permission-info">
-                                                <h5>View Team Emotions</h5>
-                                                <p>Allow team members to see collective emotion data</p>
-                                            </div>
-                                            <label class="switch">
-                                                <input type="checkbox" checked>
-                                                <span class="slider"></span>
-                                            </label>
-                                        </div>
-                                        <div class="permission-item">
-                                            <div class="permission-info">
-                                                <h5>Share Feedback</h5>
-                                                <p>Enable team feedback and communication</p>
-                                            </div>
-                                            <label class="switch">
-                                                <input type="checkbox" checked>
-                                                <span class="slider"></span>
-                                            </label>
-                                        </div>
-                                        <div class="permission-item">
-                                            <div class="permission-info">
-                                                <h5>Team Reports</h5>
-                                                <p>Generate team-wide emotion reports</p>
-                                            </div>
-                                            <label class="switch">
-                                                <input type="checkbox" checked>
-                                                <span class="slider"></span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                Save Data Settings
+                            </button>
                         </div>
                     </div>
                 </div>

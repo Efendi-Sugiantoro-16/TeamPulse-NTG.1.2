@@ -1,940 +1,1495 @@
 /**
- * Dashboard class to manage the dashboard functionality
- * Handles data loading, chart rendering, and UI updates
+ * Dashboard Management System
+ * Comprehensive dashboard with data visualization, statistics, and interactive features
  */
+
 class Dashboard {
     constructor() {
-        this.chart = null;
-        this.currentPeriod = 'week'; // Default period
-        this.initializeElements();
-        this.setupEventListeners();
-        this.checkAuthAndLoadData();
-        
-        // Auto refresh data setiap 30 detik
-        this.refreshInterval = setInterval(() => {
-            this.refreshData();
-        }, 30000);
-        
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', () => {
-            this.cleanup();
+        this.data = [];
+        this.filteredData = [];
+        this.currentPeriod = 'day';
+        this.charts = {};
+        this.storage = null;
+        this.isLoading = false;
+        // BroadcastChannel listener untuk realtime update
+        if ('BroadcastChannel' in window) {
+            this.channel = new BroadcastChannel('emotion-data');
+            this.channel.onmessage = (event) => {
+                if (event.data && event.data.type === 'new-emotion') {
+                    this.refreshData();
+                }
+            };
+        } else if (window.addEventListener) {
+            // Fallback: listen to storage event
+            window.addEventListener('storage', (event) => {
+                if (event.key && event.key.includes('emotion')) {
+                    this.refreshData();
+                }
+            });
+        }
+        // Initialize components
+        this.init();
+    }
+
+    async init() {
+        try {
+            console.log('Initializing Dashboard...');
+            
+            // Wait for storage to be available
+            await this.waitForStorage();
+            
+            // Verify storage is properly initialized
+            if (!this.storage) {
+                throw new Error('Storage system failed to initialize');
+            }
+            
+            console.log('Storage system initialized:', {
+                storageType: this.storage.constructor.name,
+                hasGetEmotionData: typeof this.storage.getEmotionData === 'function',
+                hasDeleteEmotionData: typeof this.storage.deleteEmotionData === 'function',
+                hasAddEmotionData: typeof this.storage.addEmotionData === 'function'
+            });
+            
+            // Initialize event listeners
+            this.initEventListeners();
+            
+            // Load initial data
+            await this.loadData();
+            
+            // Render all components
+            this.renderStatistics();
+            this.renderCharts();
+            this.renderRecentEntries();
+            this.renderActivityFeed();
+            this.renderStorageStatus();
+            this.renderRecentSummary();
+            
+            // Add dummy data button for testing
+            this.addDummyDataButton();
+            
+            console.log('Dashboard initialization completed successfully');
+            
+        } catch (error) {
+            console.error('Dashboard initialization failed:', error);
+            this.showError('Gagal menginisialisasi dashboard: ' + error.message);
+        }
+    }
+
+    async waitForStorage() {
+        return new Promise((resolve) => {
+            const checkStorage = () => {
+                // Check for HybridStorage first (preferred)
+                if (window.hybridStorage && 
+                    typeof window.hybridStorage.getEmotionData === 'function' &&
+                    typeof window.hybridStorage.deleteEmotionData === 'function') {
+                    this.storage = window.hybridStorage;
+                    console.log('Using HybridStorage for data management');
+                    resolve();
+                } 
+                // Fallback to DataStorage
+                else if (window.dataStorage && 
+                         typeof window.dataStorage.getEmotionData === 'function' &&
+                         typeof window.dataStorage.deleteEmotionData === 'function') {
+                    this.storage = window.dataStorage;
+                    console.log('Using DataStorage for data management');
+                    resolve();
+                } 
+                // Check if any storage is available but missing delete method
+                else if (window.hybridStorage || window.dataStorage) {
+                    console.warn('Storage found but missing required methods, waiting...');
+                    setTimeout(checkStorage, 100);
+                } 
+                else {
+                    console.log('Waiting for storage system to be available...');
+                    setTimeout(checkStorage, 100);
+                }
+            };
+            checkStorage();
         });
     }
 
-    initializeElements() {
-        // Stats elements
-        this.avgMoodElement = document.getElementById('avgMood');
-        this.stressLevelElement = document.getElementById('stressLevel');
-        this.engagementElement = document.getElementById('engagement');
-        this.responsesElement = document.getElementById('responses');
-
-        // Chart elements
-        this.chartTypeSelect = document.getElementById('chartType');
-        this.periodButtons = document.querySelectorAll('.chart-controls .btn');
-        this.moodChart = document.getElementById('moodChart');
-
-        // Activity and alerts
-        this.activityList = document.getElementById('activityList');
-        this.alertsList = document.getElementById('alertsList');
-        
-        // User info
-        this.userNameElement = document.getElementById('userName');
-        this.userInitialsElement = document.getElementById('userInitials');
-    }
-
-    setupEventListeners() {
-        // Chart type change
-        if (this.chartTypeSelect) {
-            this.chartTypeSelect.addEventListener('change', () => this.updateChartType());
-        }
-
-        // Time period buttons
-        this.periodButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                this.currentPeriod = button.dataset.period;
-                this.updateTimePeriod(this.currentPeriod);
-                this.setActiveButton(button);
+    initEventListeners() {
+        // Period selector
+        const periodButtons = document.querySelectorAll('.period-btn');
+        periodButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.setPeriod(e.target.dataset.period);
             });
         });
 
-        // Logout button
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                AuthService.logout();
-            });
+        // Refresh button
+        const refreshBtn = document.getElementById('refreshBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.refreshData());
         }
 
-        // Mobile menu functionality
-        // this.setupMobileMenu(); // DINONAKTIFKAN agar tidak konflik dengan SidebarManager
+        // Export buttons
+        const exportButtons = document.querySelectorAll('.dropdown-item[data-export]');
+        exportButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.exportData(e.target.dataset.export);
+            });
+        });
+
+        // Auto refresh every 30 seconds
+        setInterval(() => this.refreshData(), 30000);
     }
 
-    // setupMobileMenu() {
-    //     const menuToggle = document.getElementById('menuToggle');
-    //     const sidebar = document.getElementById('sidebar');
-    //     const sidebarOverlay = document.getElementById('sidebarOverlay');
-    //     const sidebarClose = document.getElementById('sidebarClose');
+    async loadData() {
+        this.isLoading = true;
+        this.showLoading();
 
-    //     if (menuToggle) {
-    //         menuToggle.addEventListener('click', () => {
-    //             sidebar.classList.add('active');
-    //             sidebarOverlay.classList.add('active');
-    //             document.body.style.overflow = 'hidden'; // Prevent background scrolling
-    //         });
-    //     }
+        try {
+            // Get data from storage
+            this.data = await this.storage.getEmotionData({ limit: 1000 });
+            
+            // Filter data based on current period
+            this.filterDataByPeriod();
+            
+        } catch (error) {
+            console.error('Failed to load data:', error);
+            this.showError('Failed to load data');
+        } finally {
+            this.isLoading = false;
+            this.hideLoading();
+        }
+    }
 
-    //     if (sidebarClose) {
-    //         sidebarClose.addEventListener('click', () => {
-    //             this.closeMobileMenu();
-    //         });
-    //     }
+    filterDataByPeriod() {
+        const now = new Date();
+        let startDate;
 
-    //     if (sidebarOverlay) {
-    //         sidebarOverlay.addEventListener('click', () => {
-    //             this.closeMobileMenu();
-    //         });
-    //     }
+        switch (this.currentPeriod) {
+            case 'day':
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                break;
+            case 'week':
+                startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+            case 'month':
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                break;
+            case 'year':
+                startDate = new Date(now.getFullYear(), 0, 1);
+                break;
+            default:
+                startDate = new Date(0);
+        }
 
-    //     // Close menu when clicking on navigation links
-    //     const navLinks = sidebar.querySelectorAll('nav a');
-    //     navLinks.forEach(link => {
-    //         link.addEventListener('click', () => {
-    //             this.closeMobileMenu();
-    //         });
-    //     });
+        this.filteredData = this.data.filter(item => {
+            const itemDate = new Date(item.timestamp);
+            return itemDate >= startDate;
+        });
+    }
 
-    //     // Handle window resize
-    //     window.addEventListener('resize', () => {
-    //         if (window.innerWidth > 991) {
-    //             this.closeMobileMenu();
-    //         }
-    //     });
-    // }
+    setPeriod(period) {
+        this.currentPeriod = period;
+        
+        // Update active button
+        document.querySelectorAll('.period-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-period="${period}"]`).classList.add('active');
+        
+        // Re-filter and re-render
+        this.filterDataByPeriod();
+        this.renderStatistics();
+        this.renderCharts();
+        this.renderRecentEntries();
+        this.renderActivityFeed();
+        this.renderRecentSummary();
+    }
 
-    // closeMobileMenu() {
-    //     const sidebar = document.getElementById('sidebar');
-    //     const sidebarOverlay = document.getElementById('sidebarOverlay');
-    //     if (sidebar) sidebar.classList.remove('active');
-    //     if (sidebarOverlay) sidebarOverlay.classList.remove('active');
-    //     document.body.style.overflow = ''; // Restore scrolling
-    // }
+    async refreshData() {
+        await this.loadData();
+        this.renderStatistics();
+        this.renderCharts();
+        this.renderRecentEntries();
+        this.renderActivityFeed();
+        this.renderStorageStatus();
+        this.renderRecentSummary();
+        this.showSuccess('Data refreshed successfully');
+    }
 
-    async checkAuthAndLoadData() {
-        if (!AuthService.isAuthenticated()) {
-            window.location.href = 'login.html';
+    renderRecentSummary() {
+        const recentData = this.filteredData.slice(0, 10);
+        const summaryContainer = document.getElementById('recentSummary');
+        
+        if (!summaryContainer) {
+            // Buat container jika belum ada
+            const dashboardContent = document.querySelector('.dashboard-content');
+            if (dashboardContent) {
+                const summaryDiv = document.createElement('div');
+                summaryDiv.id = 'recentSummary';
+                summaryDiv.className = 'recent-summary mb-4';
+                dashboardContent.insertBefore(summaryDiv, dashboardContent.firstChild);
+            }
+        }
+
+        if (recentData.length === 0) {
+            if (summaryContainer) {
+                summaryContainer.innerHTML = '<div class="message info">Belum ada data recent entries. Silakan tambah data emosi terlebih dahulu.</div>';
+            }
             return;
         }
+
+        const emotionCounts = {};
+        const avgConfidence = recentData.reduce((sum, item) => sum + (item.confidence || 0), 0) / recentData.length;
         
-        await this.loadUserData();
-        await this.loadDashboardData();
-    }
-    
-    async loadUserData() {
-        try {
-            const user = AuthService.getCurrentUser();
-            if (user) {
-                if (this.userNameElement) this.userNameElement.textContent = user.full_name || user.username;
-                if (this.userInitialsElement) {
-                    const initials = user.full_name 
-                        ? user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()
-                        : user.username.substring(0, 2).toUpperCase();
-                    this.userInitialsElement.textContent = initials;
-                }
-            }
-        } catch (error) {
-            console.error('Error loading user data:', error);
-            this.showError('Failed to load user data');
-        }
-    }
-    
-    async loadDashboardData() {
-        try {
-            this.showLoading(true);
-            const storage = new window.DataStorage();
-            let emotionData = await storage.getEmotionData();
-            
-            // If no data exists, create some sample data for demonstration
-            if (!emotionData || emotionData.length === 0) {
-                console.log('No emotion data found, creating sample data for demonstration');
-                emotionData = this.generateSampleData();
-                
-                // Save sample data to storage
-                for (const sample of emotionData) {
-                    await storage.saveEmotionData(sample);
-                }
-            }
-            
-            const stats = this.calculateStats(emotionData);
-            this.updateStats(stats);
-            this.initializeCharts(emotionData);
-            this.updateActivityFeed(emotionData);
-            this.updateAlerts(emotionData);
-        } catch (error) {
-            console.error('Error loading dashboard data:', error);
-            this.showError('Failed to load dashboard data. Please try again later.');
-        } finally {
-            this.showLoading(false);
+        recentData.forEach(item => {
+            const emotion = item.dominantEmotion || 'unknown';
+            emotionCounts[emotion] = (emotionCounts[emotion] || 0) + 1;
+        });
+
+        const dominantEmotion = Object.entries(emotionCounts).reduce((a, b) => 
+            emotionCounts[a] > emotionCounts[b] ? a : b);
+
+        const summaryHTML = `
+            <div class="summary-card">
+                <div class="summary-header">
+                    <h3><i class="fas fa-chart-line"></i> Ringkasan Recent Entries (10 Terbaru)</h3>
+                </div>
+                <div class="summary-content">
+                    <div class="summary-item">
+                        <span class="summary-label">Total Entries:</span>
+                        <span class="summary-value">${recentData.length}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Emosi Dominan:</span>
+                        <span class="summary-value emotion-badge ${dominantEmotion}">${dominantEmotion}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Rata-rata Confidence:</span>
+                        <span class="summary-value">${(avgConfidence * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Rentang Waktu:</span>
+                        <span class="summary-value">${this.getTimeRange(recentData)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        if (summaryContainer) {
+            summaryContainer.innerHTML = summaryHTML;
         }
     }
 
-    generateSampleData() {
-        const sampleData = [];
-        const now = new Date();
+    getTimeRange(data) {
+        if (data.length < 2) return 'N/A';
         
-        // Generate data for the last 7 days
-        for (let i = 6; i >= 0; i--) {
-            const date = new Date(now);
-            date.setDate(date.getDate() - i);
-            
-            // Create 2-4 entries per day
-            const entriesPerDay = Math.floor(Math.random() * 3) + 2;
-            
-            for (let j = 0; j < entriesPerDay; j++) {
-                const timestamp = new Date(date);
-                timestamp.setHours(9 + Math.floor(Math.random() * 8)); // Random hour between 9-17
-                timestamp.setMinutes(Math.floor(Math.random() * 60));
-                
-                // Generate more realistic emotion patterns
-                let emotions;
-                
-                // Different patterns for different times of day
-                const hour = timestamp.getHours();
-                if (hour < 12) {
-                    // Morning: generally more positive
-                    emotions = {
-                        happy: 0.6 + Math.random() * 0.3,
-                        sad: Math.random() * 0.2,
-                        angry: Math.random() * 0.1,
-                        neutral: 0.2 + Math.random() * 0.3,
-                        surprised: Math.random() * 0.2,
-                        fearful: Math.random() * 0.1,
-                        disgusted: Math.random() * 0.05
-                    };
-                } else if (hour < 17) {
-                    // Afternoon: mixed emotions
-                    emotions = {
-                        happy: 0.3 + Math.random() * 0.4,
-                        sad: 0.1 + Math.random() * 0.3,
-                        angry: 0.1 + Math.random() * 0.2,
-                        neutral: 0.3 + Math.random() * 0.4,
-                        surprised: Math.random() * 0.3,
-                        fearful: Math.random() * 0.2,
-                        disgusted: Math.random() * 0.1
-                    };
-                } else {
-                    // Evening: more tired/neutral
-                    emotions = {
-                        happy: 0.2 + Math.random() * 0.3,
-                        sad: 0.2 + Math.random() * 0.3,
-                        angry: Math.random() * 0.2,
-                        neutral: 0.4 + Math.random() * 0.4,
-                        surprised: Math.random() * 0.1,
-                        fearful: Math.random() * 0.1,
-                        disgusted: Math.random() * 0.05
-                    };
-                }
-                
-                // Normalize emotions to sum to 1
-                const total = Object.values(emotions).reduce((sum, val) => sum + val, 0);
-                Object.keys(emotions).forEach(key => {
-                    emotions[key] = emotions[key] / total;
-                });
-                
-                // Add metadata
-                emotions.id = Date.now().toString() + '_' + i + '_' + j;
-                emotions.timestamp = timestamp.toISOString();
-                emotions.source = 'sample_data';
-                
-                sampleData.push(emotions);
-            }
-        }
+        const firstTime = new Date(data[data.length - 1].timestamp);
+        const lastTime = new Date(data[0].timestamp);
+        const diffHours = Math.abs(lastTime - firstTime) / (1000 * 60 * 60);
         
-        return sampleData;
-    }
-
-    async updateTimePeriod(period) {
-        try {
-            this.showLoading(true);
-            const storage = new window.DataStorage();
-            let emotionData = await storage.getEmotionData();
-            // Filter data sesuai period (day/week/month/all)
-            if (period !== 'all') {
-                const now = Date.now();
-                let range = 0;
-                if (period === 'day') range = 24 * 60 * 60 * 1000;
-                if (period === 'week') range = 7 * 24 * 60 * 60 * 1000;
-                if (period === 'month') range = 30 * 24 * 60 * 60 * 1000;
-                emotionData = emotionData.filter(item => now - new Date(item.timestamp).getTime() <= range);
-            }
-            
-            // Update chart and stats
-            this.initializeCharts(emotionData);
-            const stats = this.calculateStats(emotionData);
-            this.updateStats(stats);
-            this.updateActivityFeed(emotionData);
-            this.updateAlerts(emotionData);
-        } catch (error) {
-            console.error('Error updating time period:', error);
-            this.showError('Failed to update time period');
-        } finally {
-            this.showLoading(false);
+        if (diffHours < 1) {
+            const diffMinutes = Math.abs(lastTime - firstTime) / (1000 * 60);
+            return `${diffMinutes.toFixed(0)} menit`;
+        } else if (diffHours < 24) {
+            return `${diffHours.toFixed(1)} jam`;
+        } else {
+            const diffDays = diffHours / 24;
+            return `${diffDays.toFixed(1)} hari`;
         }
     }
 
-    calculateStats(emotionData) {
-        if (!emotionData || emotionData.length === 0) {
+    renderStatistics() {
+        const stats = this.calculateStatistics();
+        const recentStats = this.calculateRecentStatistics();
+        
+        // Update stat cards
+        this.updateStatCard('totalEntries', stats.totalEntries);
+        this.updateStatCard('overallMood', recentStats.overallMood); // Gunakan data recent untuk mood
+        this.updateStatCard('stressLevel', recentStats.stressLevel); // Gunakan data recent untuk stress
+        this.updateStatCard('engagement', stats.engagement);
+        this.updateStatCard('dataQuality', recentStats.dataQuality); // Gunakan data recent untuk quality
+        this.updateStatCard('activeUsers', stats.activeUsers);
+    }
+
+    calculateRecentStatistics() {
+        const recentData = this.filteredData.slice(0, 10);
+        const totalRecent = recentData.length;
+        
+        if (totalRecent === 0) {
             return {
-                average_mood: 50,
-                stress_level: 30,
-                engagement: 70,
-                total_responses: 0,
-                trend: 0
+                overallMood: 'Neutral',
+                stressLevel: 'Low',
+                dataQuality: 'Poor'
             };
         }
-        
-        const total = emotionData.length;
-        let sumMood = 0;
-        let sumStress = 0;
-        let sumEngagement = 0;
-        
-        emotionData.forEach(entry => {
-            // Calculate mood level from emotion scores
-            // Positive emotions (happy, surprised) contribute positively
-            // Negative emotions (sad, angry, fearful, disgusted) contribute negatively
-            const positiveScore = (entry.happy || 0) + (entry.surprised || 0);
-            const negativeScore = (entry.sad || 0) + (entry.angry || 0) + (entry.fearful || 0) + (entry.disgusted || 0);
-            const neutralScore = entry.neutral || 0;
-            
-            // Mood level calculation: positive emotions boost mood, negative emotions reduce it
-            const moodLevel = Math.max(0, Math.min(100, 
-                (positiveScore * 100) - (negativeScore * 50) + (neutralScore * 50)
-            ));
-            
-            // Stress level calculation: based on negative emotions
-            const stressLevel = Math.max(0, Math.min(100, negativeScore * 100));
-            
-            // Engagement calculation: based on intensity of any emotion (not neutral)
-            const totalEmotionIntensity = positiveScore + negativeScore;
-            const engagement = Math.max(0, Math.min(100, totalEmotionIntensity * 100));
-            
-            sumMood += moodLevel;
-            sumStress += stressLevel;
-            sumEngagement += engagement;
+
+        // Emotion distribution dari recent data
+        const emotionCounts = {};
+        recentData.forEach(item => {
+            const emotion = item.dominantEmotion || 'unknown';
+            emotionCounts[emotion] = (emotionCounts[emotion] || 0) + 1;
         });
+
+        // Overall mood (most frequent emotion dari recent data)
+        const overallMood = Object.keys(emotionCounts).length > 0 
+            ? Object.entries(emotionCounts).reduce((a, b) => emotionCounts[a] > emotionCounts[b] ? a : b)
+            : 'Neutral';
+
+        // Stress level berdasarkan negative emotions dari recent data
+        const negativeEmotions = ['sad', 'angry', 'fear', 'disgust'];
+        const negativeCount = negativeEmotions.reduce((sum, emotion) => 
+            sum + (emotionCounts[emotion] || 0), 0);
+        const stressPercentage = totalRecent > 0 ? (negativeCount / totalRecent) * 100 : 0;
         
-        const average_mood = sumMood / total;
-        const stress_level = sumStress / total;
-        const engagement = sumEngagement / total;
+        let stressLevel = 'Low';
+        if (stressPercentage > 50) stressLevel = 'High';
+        else if (stressPercentage > 25) stressLevel = 'Medium';
+
+        // Data quality berdasarkan confidence scores dari recent data
+        const avgConfidence = recentData.length > 0 
+            ? recentData.reduce((sum, item) => sum + (item.confidence || 0), 0) / recentData.length
+            : 0;
         
-        // Trend: selisih jumlah data hari ini dan kemarin
-        const now = new Date();
-        const today = emotionData.filter(d => new Date(d.timestamp).toDateString() === now.toDateString()).length;
-        const yesterday = emotionData.filter(d => {
-            const date = new Date(d.timestamp);
-            const yest = new Date(now);
-            yest.setDate(now.getDate() - 1);
-            return date.toDateString() === yest.toDateString();
-        }).length;
-        const trend = today - yesterday;
-        
+        let dataQuality = 'Poor';
+        if (avgConfidence > 0.8) dataQuality = 'Excellent';
+        else if (avgConfidence > 0.6) dataQuality = 'Good';
+        else if (avgConfidence > 0.4) dataQuality = 'Fair';
+
         return {
-            average_mood,
-            stress_level,
-            engagement,
-            total_responses: total,
-            trend
+            overallMood,
+            stressLevel,
+            dataQuality
         };
     }
 
-    updateChartType() {
-        if (!this.chart || !this.moodChart) return;
+    calculateStatistics() {
+        const totalEntries = this.filteredData.length;
         
-        try {
-            const chartType = this.chartTypeSelect.value;
-            
-            // Store chart data before destroying
-            const chartData = this.chart.data;
-            const chartOptions = this.chart.options;
-            
-            // Destroy existing chart
-            this.chart.destroy();
-            this.chart = null;
-            
-            // Clear canvas
-            const ctx = this.moodChart.getContext('2d');
-            ctx.clearRect(0, 0, this.moodChart.width, this.moodChart.height);
-            
-            // Configure datasets based on chart type
-            const datasets = chartData.datasets.map(dataset => {
-                const newDataset = { ...dataset };
-                
-                if (chartType === 'bar') {
-                    // Remove line-specific properties
-                    delete newDataset.tension;
-                    delete newDataset.fill;
-                    // Set bar-specific properties
-                    newDataset.backgroundColor = dataset.label === 'Mood Level' 
-                        ? 'rgba(76, 175, 80, 0.8)' 
-                        : 'rgba(244, 67, 54, 0.8)';
-                    newDataset.borderWidth = 1;
-                } else if (chartType === 'line') {
-                    // Add line-specific properties
-                    newDataset.tension = 0.3;
-                    newDataset.fill = true;
-                    newDataset.backgroundColor = dataset.label === 'Mood Level' 
-                        ? 'rgba(76, 175, 80, 0.1)' 
-                        : 'rgba(244, 67, 54, 0.1)';
-                    delete newDataset.borderWidth;
-                }
-                
-                return newDataset;
-            });
-            
-            // Recreate chart with new type
-            setTimeout(() => {
-                try {
-                    this.chart = new Chart(ctx, {
-                        type: chartType,
-                        data: {
-                            labels: chartData.labels,
-                            datasets: datasets
-                        },
-                        options: chartOptions
-                    });
-                    console.log('Chart type updated successfully to:', chartType);
-                } catch (error) {
-                    console.error('Error recreating chart:', error);
-                    this.showError('Failed to update chart type');
-                }
-            }, 100);
-            
-        } catch (error) {
-            console.error('Error updating chart type:', error);
-            this.showError('Failed to update chart type');
-        }
-    }
-
-    setActiveButton(activeButton) {
-        this.periodButtons.forEach(btn => {
-            btn.classList.toggle('active', btn === activeButton);
+        // Emotion distribution
+        const emotionCounts = {};
+        this.filteredData.forEach(item => {
+            const emotion = item.dominantEmotion || 'unknown';
+            emotionCounts[emotion] = (emotionCounts[emotion] || 0) + 1;
         });
+
+        // Overall mood (most frequent emotion)
+        const overallMood = Object.keys(emotionCounts).length > 0 
+            ? Object.entries(emotionCounts).reduce((a, b) => emotionCounts[a] > emotionCounts[b] ? a : b)
+            : 'Neutral';
+
+        // Stress level based on negative emotions
+        const negativeEmotions = ['sad', 'angry', 'fear', 'disgust'];
+        const negativeCount = negativeEmotions.reduce((sum, emotion) => 
+            sum + (emotionCounts[emotion] || 0), 0);
+        const stressPercentage = totalEntries > 0 ? (negativeCount / totalEntries) * 100 : 0;
+        
+        let stressLevel = 'Low';
+        if (stressPercentage > 50) stressLevel = 'High';
+        else if (stressPercentage > 25) stressLevel = 'Medium';
+
+        // Engagement (based on data frequency)
+        let engagement = 'Low';
+        if (totalEntries > 50) engagement = 'High';
+        else if (totalEntries > 20) engagement = 'Medium';
+
+        // Data quality (based on confidence scores)
+        const avgConfidence = this.filteredData.length > 0 
+            ? this.filteredData.reduce((sum, item) => sum + (item.confidence || 0), 0) / this.filteredData.length
+            : 0;
+        
+        let dataQuality = 'Poor';
+        if (avgConfidence > 0.8) dataQuality = 'Excellent';
+        else if (avgConfidence > 0.6) dataQuality = 'Good';
+        else if (avgConfidence > 0.4) dataQuality = 'Fair';
+
+        // Active users (unique user IDs)
+        const uniqueUsers = new Set(this.filteredData.map(item => item.userId).filter(Boolean));
+        const activeUsers = uniqueUsers.size;
+
+        return {
+            totalEntries,
+            overallMood,
+            stressLevel,
+            engagement,
+            dataQuality,
+            activeUsers
+        };
     }
 
-    updateStats(stats) {
-        if (!stats) return;
-
-        try {
-            if (this.avgMoodElement) {
-                const avgMood = stats.average_mood || 50;
-                this.avgMoodElement.textContent = `${Math.round(avgMood)}%`;
-                const moodFill = this.avgMoodElement.closest('.stat-card')?.querySelector('.meter-fill');
-                if (moodFill) {
-                    moodFill.style.width = `${avgMood}%`;
-                    moodFill.style.backgroundColor = this.getMoodColor(avgMood);
-                }
-            }
-            
-            if (this.stressLevelElement) {
-                const stressLevel = stats.stress_level || 30;
-                this.stressLevelElement.textContent = this.getStressLevelText(stressLevel);
-                const stressFill = this.stressLevelElement.closest('.stat-card')?.querySelector('.meter-fill');
-                if (stressFill) {
-                    stressFill.style.width = `${stressLevel}%`;
-                    stressFill.style.backgroundColor = this.getStressColor(stressLevel);
-                }
-            }
-            
-            if (this.engagementElement) {
-                const engagement = stats.engagement || 70;
-                this.engagementElement.textContent = this.getEngagementText(engagement);
-                const engagementFill = this.engagementElement.closest('.stat-card')?.querySelector('.meter-fill');
-                if (engagementFill) {
-                    engagementFill.style.width = `${engagement}%`;
-                    engagementFill.style.backgroundColor = this.getEngagementColor(engagement);
-                }
-            }
-            
-            if (this.responsesElement) {
-                this.responsesElement.textContent = stats.total_responses || 0;
-                const trendElement = this.responsesElement.nextElementSibling;
-                if (trendElement?.classList?.contains('stat-trend')) {
-                    const trend = stats.trend || 0;
-                    trendElement.textContent = trend >= 0 ? `↑ ${trend} today` : `↓ ${Math.abs(trend)} today`;
-                    trendElement.className = `stat-trend ${trend >= 0 ? 'positive' : 'negative'}`;
-                }
-            }
-        } catch (error) {
-            console.error('Error updating stats:', error);
+    updateStatCard(id, value) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
         }
     }
 
-    initializeCharts(historyData) {
-        if (!this.moodChart) {
-            console.error('Mood chart canvas not found');
-            return;
+    renderCharts() {
+        this.renderEmotionDistributionChart();
+        this.renderTimeAnalysisChart();
+        this.renderConfidenceChart();
+        this.renderEmotionTrendChart();
+    }
+
+    renderEmotionDistributionChart() {
+        const ctx = document.getElementById('emotionDistributionChart');
+        if (!ctx) return;
+
+        // Destroy existing chart
+        if (this.charts.emotionDistribution) {
+            this.charts.emotionDistribution.destroy();
         }
 
-        // Check if Chart.js is available
-        if (typeof Chart === 'undefined') {
-            console.error('Chart.js is not loaded');
-            this.showError('Chart library not loaded. Please refresh the page.');
-            return;
-        }
+        // Get recent entries for chart
+        const recentEntries = this.data.slice(0, 10);
+        
+        // Count emotions
+        const emotionCounts = {};
+        const emotionConfidences = {};
+        
+        recentEntries.forEach(entry => {
+            const emotion = entry.dominantEmotion || entry.emotion || 'unknown';
+            emotionCounts[emotion] = (emotionCounts[emotion] || 0) + 1;
+            
+            if (!emotionConfidences[emotion]) {
+                emotionConfidences[emotion] = [];
+            }
+            emotionConfidences[emotion].push(entry.confidence || 0);
+        });
 
-        try {
-            // Destroy existing chart if it exists
-            if (this.chart) {
-                this.chart.destroy();
-                this.chart = null;
+        // Calculate average confidence for each emotion
+        const avgConfidences = {};
+        Object.keys(emotionConfidences).forEach(emotion => {
+            const confidences = emotionConfidences[emotion];
+            avgConfidences[emotion] = confidences.reduce((a, b) => a + b, 0) / confidences.length;
+        });
+
+        const emotions = Object.keys(emotionCounts);
+        const counts = emotions.map(emotion => emotionCounts[emotion]);
+        const avgConf = emotions.map(emotion => avgConfidences[emotion] || 0);
+
+        // Color mapping for emotions with gradients
+        const emotionColors = {
+            'happy': {
+                primary: '#FFD700',
+                gradient: ['#FFD700', '#FFA500']
+            },
+            'sad': {
+                primary: '#4169E1',
+                gradient: ['#4169E1', '#1E90FF']
+            },
+            'angry': {
+                primary: '#DC143C',
+                gradient: ['#DC143C', '#FF4500']
+            },
+            'neutral': {
+                primary: '#808080',
+                gradient: ['#808080', '#A9A9A9']
+            },
+            'surprise': {
+                primary: '#FF69B4',
+                gradient: ['#FF69B4', '#FF1493']
+            },
+            'fear': {
+                primary: '#8B4513',
+                gradient: ['#8B4513', '#A0522D']
+            },
+            'disgust': {
+                primary: '#228B22',
+                gradient: ['#228B22', '#32CD32']
+            },
+            'unknown': {
+                primary: '#A9A9A9',
+                gradient: ['#A9A9A9', '#C0C0C0']
             }
-            
-            // Clear the canvas completely
-            const ctx = this.moodChart.getContext('2d');
-            if (!ctx) {
-                console.error('Could not get canvas context');
-                this.showError('Chart canvas error. Please refresh the page.');
-                return;
-            }
-            
-            ctx.clearRect(0, 0, this.moodChart.width, this.moodChart.height);
-            
-            // Validate input data
-            if (!historyData || !Array.isArray(historyData) || historyData.length === 0) {
-                console.warn('No history data available for chart');
-                this.showError('No data available for chart');
-                return;
-            }
-            
-            // Process data for charting
-            const processedData = historyData.map(entry => {
-                // Calculate mood level from emotion scores
-                const positiveScore = (entry.happy || 0) + (entry.surprised || 0);
-                const negativeScore = (entry.sad || 0) + (entry.angry || 0) + (entry.fearful || 0) + (entry.disgusted || 0);
-                const neutralScore = entry.neutral || 0;
-                
-                const moodLevel = Math.max(0, Math.min(100, 
-                    (positiveScore * 100) - (negativeScore * 50) + (neutralScore * 50)
-                ));
-                
-                const stressLevel = Math.max(0, Math.min(100, negativeScore * 100));
-                
-                return {
-                    timestamp: entry.timestamp,
-                    mood_level: moodLevel,
-                    stress_level: stressLevel
-                };
-            });
-            
-            // Sort by timestamp
-            processedData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            
-            const labels = processedData.map(entry => new Date(entry.timestamp).toLocaleDateString());
-            const moodData = processedData.map(entry => entry.mood_level);
-            const stressData = processedData.map(entry => entry.stress_level);
-            
-            // Create new chart with a small delay to ensure canvas is ready
-            setTimeout(() => {
-                try {
-                    const chartType = this.chartTypeSelect?.value || 'bar';
-                    
-                    // Configure chart options based on type
-                    const chartOptions = {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                            },
-                            tooltip: {
-                                mode: 'index',
-                                intersect: false,
-                                callbacks: {
-                                    label: function(context) {
-                                        return `${context.dataset.label}: ${context.raw}%`;
-                                    }
-                                }
-                            },
-                            title: {
-                                display: true,
-                                text: 'Team Mood & Stress Levels Over Time'
-                            }
+        };
+
+        const colors = emotions.map(emotion => {
+            const colorSet = emotionColors[emotion] || emotionColors.unknown;
+            return colorSet.primary;
+        });
+
+        // Create gradient backgrounds
+        const gradients = colors.map((color, index) => {
+            const canvas = ctx;
+            const gradient = canvas.getContext('2d').createLinearGradient(0, 0, 0, 400);
+            const colorSet = emotionColors[emotions[index]] || emotionColors.unknown;
+            gradient.addColorStop(0, colorSet.gradient[0]);
+            gradient.addColorStop(1, colorSet.gradient[1]);
+            return gradient;
+        });
+
+        this.charts.emotionDistribution = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: emotions.map(emotion => this.capitalizeFirst(emotion)),
+                datasets: [
+                    {
+                        label: 'Jumlah Entries',
+                        data: counts,
+                        backgroundColor: gradients,
+                        borderColor: colors.map(color => this.adjustBrightness(color, -20)),
+                        borderWidth: 2,
+                        borderRadius: {
+                            topLeft: 8,
+                            topRight: 8,
+                            bottomLeft: 0,
+                            bottomRight: 0
                         },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                max: 100,
-                                title: {
-                                    display: true,
-                                    text: 'Level (%)'
-                                }
-                            },
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Date'
-                                }
-                            }
-                        },
-                        interaction: {
-                            intersect: false,
-                            mode: 'index'
-                        }
-                    };
-                    
-                    // Configure datasets based on chart type
-                    const datasets = [
-                        {
-                            label: 'Mood Level',
-                            data: moodData,
-                            backgroundColor: 'rgba(76, 175, 80, 0.8)',
-                            borderColor: '#4CAF50',
-                            borderWidth: 1
-                        },
-                        {
-                            label: 'Stress Level',
-                            data: stressData,
-                            backgroundColor: 'rgba(244, 67, 54, 0.8)',
-                            borderColor: '#F44336',
-                            borderWidth: 1
-                        }
-                    ];
-                    
-                    // Add specific properties for line chart
-                    if (chartType === 'line') {
-                        datasets[0].tension = 0.3;
-                        datasets[0].fill = true;
-                        datasets[0].backgroundColor = 'rgba(76, 175, 80, 0.1)';
-                        datasets[1].tension = 0.3;
-                        datasets[1].fill = true;
-                        datasets[1].backgroundColor = 'rgba(244, 67, 54, 0.1)';
+                        borderSkipped: false,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Rata-rata Confidence',
+                        data: avgConf,
+                        type: 'line',
+                        borderColor: '#FF6B6B',
+                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                        borderWidth: 4,
+                        pointBackgroundColor: '#FF6B6B',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 3,
+                        pointRadius: 8,
+                        pointHoverRadius: 12,
+                        yAxisID: 'y1',
+                        tension: 0.4,
+                        fill: true
                     }
-                    
-                    this.chart = new Chart(ctx, {
-                        type: chartType,
-                        data: {
-                            labels: labels,
-                            datasets: datasets
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '📊 Distribusi Emosi & Confidence (10 Entries Terbaru)',
+                        font: {
+                            size: 18,
+                            weight: 'bold'
                         },
-                        options: chartOptions
-                    });
-                    
-                    console.log('Chart created successfully with type:', chartType);
-                } catch (chartError) {
-                    console.error('Error creating chart:', chartError);
-                    this.showError('Failed to create chart. Please refresh the page.');
+                        color: '#333',
+                        padding: 20
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#FF6B6B',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Jumlah Entries'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Confidence Score'
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        },
+                        min: 0,
+                        max: 1
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
                 }
-            }, 200);
-            
-        } catch (error) {
-            console.error('Error initializing charts:', error);
-            this.showError('Failed to load charts. Please refresh the page.');
-        }
-    }
-
-    updateActivityFeed(historyData) {
-        if (!this.activityList) return;
-
-        try {
-            if (!historyData || historyData.length === 0) {
-                this.activityList.innerHTML = '<li class="no-activity">No recent activity to display</li>';
-                return;
             }
-            
-            // Process data for activity feed
-            const processedData = historyData.map(entry => {
-                // Calculate mood level from emotion scores
-                const positiveScore = (entry.happy || 0) + (entry.surprised || 0);
-                const negativeScore = (entry.sad || 0) + (entry.angry || 0) + (entry.fearful || 0) + (entry.disgusted || 0);
-                const neutralScore = entry.neutral || 0;
-                
-                const moodLevel = Math.max(0, Math.min(100, 
-                    (positiveScore * 100) - (negativeScore * 50) + (neutralScore * 50)
-                ));
-                
-                // Find dominant emotion
-                const emotions = {
-                    happy: entry.happy || 0,
-                    sad: entry.sad || 0,
-                    angry: entry.angry || 0,
-                    neutral: entry.neutral || 0,
-                    surprised: entry.surprised || 0,
-                    fearful: entry.fearful || 0,
-                    disgusted: entry.disgusted || 0
-                };
-                
-                const dominantEmotion = Object.entries(emotions).reduce((a, b) => a[1] > b[1] ? a : b);
-                
-                return {
-                    ...entry,
-                    mood_level: moodLevel,
-                    dominant_emotion: dominantEmotion[0],
-                    dominant_score: dominantEmotion[1]
-                };
-            });
-            
-            // Sort by timestamp (newest first)
-            processedData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            
-            this.activityList.innerHTML = processedData
-                .slice(0, 5) // Show only the 5 most recent entries
-                .map(entry => {
-                    const date = new Date(entry.timestamp);
-                    const moodIcon = this.getMoodIcon(entry.mood_level);
-                    const timeAgo = this.formatTimeAgo(date);
-                    const emotionName = entry.dominant_emotion.charAt(0).toUpperCase() + entry.dominant_emotion.slice(1);
-                    const emotionPercentage = Math.round(entry.dominant_score * 100);
-                    
-                    return `
-                        <li class="activity-item">
-                            <div class="activity-icon ${entry.mood_level >= 70 ? 'positive' : entry.mood_level >= 40 ? 'neutral' : 'negative'}">
-                                <i class="fas ${moodIcon}"></i>
-                            </div>
-                            <div class="activity-details">
-                                <p class="activity-text">
-                                    <strong>Emotion recorded</strong>: 
-                                    <span class="mood-level">${emotionName} (${emotionPercentage}%)</span>
-                                    <br>
-                                    <span class="overall-mood">Overall mood: ${Math.round(entry.mood_level)}%</span>
-                                    ${entry.source ? `<span class="activity-source">via ${entry.source}</span>` : ''}
-                                </p>
-                                <p class="activity-time" title="${date.toLocaleString()}">
-                                    ${timeAgo}
-                                </p>
-                            </div>
-                        </li>
-                    `;
-                })
-                .join('');
-        } catch (error) {
-            console.error('Error updating activity feed:', error);
-            this.activityList.innerHTML = '<li class="error">Failed to load activity feed</li>';
-        }
-    }
-
-    updateAlerts(emotionData) {
-        if (!this.alertsList) return;
-
-        try {
-            const alerts = this.generateAlerts(emotionData);
-            
-            this.alertsList.innerHTML = alerts
-                .map(alert => `
-                    <div class="alert-item ${alert.level}">
-                        <strong>${alert.title}</strong>
-                        <p>${alert.message}</p>
-                        <small>${alert.time}</small>
-                    </div>
-                `)
-                .join('');
-        } catch (error) {
-            console.error('Error updating alerts:', error);
-            this.alertsList.innerHTML = '<div class="alert-item low">No alerts at this time</div>';
-        }
-    }
-
-    generateAlerts(emotionData) {
-        const alerts = [];
-        const now = new Date();
-        
-        // Analyze recent data for alerts
-        const recentData = emotionData.filter(entry => {
-            const entryTime = new Date(entry.timestamp);
-            return now - entryTime < 24 * 60 * 60 * 1000; // Last 24 hours
         });
+    }
+
+    renderTimeAnalysisChart() {
+        const ctx = document.getElementById('timeAnalysisChart');
+        if (!ctx) return;
+
+        // Destroy existing chart
+        if (this.charts.timeAnalysis) {
+            this.charts.timeAnalysis.destroy();
+        }
+
+        // Group data by hour
+        const hourlyData = {};
+        for (let i = 0; i < 24; i++) {
+            hourlyData[i] = 0;
+        }
+
+        this.filteredData.forEach(item => {
+            const hour = new Date(item.timestamp).getHours();
+            hourlyData[hour]++;
+        });
+
+        const labels = Array.from({length: 24}, (_, i) => `${i}:00`);
+        const data = Object.values(hourlyData);
+
+        // Create gradient
+        const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(59, 130, 246, 0.8)');
+        gradient.addColorStop(1, 'rgba(59, 130, 246, 0.1)');
+
+        this.charts.timeAnalysis = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+            datasets: [{
+                    label: 'Jumlah Entries per Jam',
+                    data: data,
+                    borderColor: '#3b82f6',
+                    backgroundColor: gradient,
+                    borderWidth: 4,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#3b82f6',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 3,
+                    pointRadius: 8,
+                    pointHoverRadius: 12
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '🕐 Aktivitas per Jam',
+                        font: {
+                            size: 18,
+                            weight: 'bold'
+                        },
+                        color: '#1e293b',
+                        padding: 20
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#3b82f6',
+                        borderWidth: 2,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function(context) {
+                                return `📊 Entries: ${context.parsed.y}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Jam',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)',
+                            drawBorder: false
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Jumlah Entries',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            beginAtZero: true
+                        }
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        });
+    }
+
+    renderConfidenceChart() {
+        const ctx = document.getElementById('confidenceChart');
+        if (!ctx) return;
+
+        // Destroy existing chart
+        if (this.charts.confidence) {
+            this.charts.confidence.destroy();
+        }
+
+        // Get recent data
+        const recentData = this.filteredData.slice(0, 20);
+        
+        // Prepare data for confidence chart
+        const labels = recentData.map((item, index) => `Entry ${index + 1}`);
+        const confidenceData = recentData.map(item => (item.confidence || 0) * 100);
+        const emotionData = recentData.map(item => item.dominantEmotion || 'unknown');
+
+        // Color mapping for emotions
+        const emotionColors = {
+            'happy': '#10b981',
+            'sad': '#3b82f6',
+            'angry': '#ef4444',
+            'fear': '#f59e0b',
+            'surprise': '#8b5cf6',
+            'disgust': '#059669',
+            'neutral': '#6b7280',
+            'unknown': '#9ca3af'
+        };
+
+        const colors = emotionData.map(emotion => emotionColors[emotion] || '#9ca3af');
+
+        this.charts.confidence = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Confidence Score (%)',
+                    data: confidenceData,
+                    backgroundColor: colors,
+                    borderColor: colors.map(color => this.adjustBrightness(color, -20)),
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '🎯 Confidence Score per Entry (20 Terbaru)',
+                        font: {
+                            size: 18,
+                            weight: 'bold'
+                        },
+                        color: '#1e293b',
+                        padding: 20
+                    },
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#10b981',
+                        borderWidth: 2,
+                        cornerRadius: 8,
+                        callbacks: {
+                            title: function(context) {
+                                const index = context[0].dataIndex;
+                                const emotion = emotionData[index];
+                                return `Entry ${index + 1} - ${emotion.charAt(0).toUpperCase() + emotion.slice(1)}`;
+                            },
+                            label: function(context) {
+                                return `Confidence: ${context.parsed.y.toFixed(1)}%`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Entry',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Confidence (%)',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)',
+                            drawBorder: false
+                        },
+                        min: 0,
+                        max: 100,
+                        ticks: {
+                            stepSize: 20
+                        }
+                    }
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        });
+    }
+
+    renderEmotionTrendChart() {
+        const ctx = document.getElementById('emotionTrendChart');
+        if (!ctx) return;
+
+        // Destroy existing chart
+        if (this.charts.emotionTrend) {
+            this.charts.emotionTrend.destroy();
+        }
+
+        // Get recent data and group by day
+        const recentData = this.filteredData.slice(0, 50);
+        const dailyData = {};
+        
+        recentData.forEach(item => {
+            const date = new Date(item.timestamp).toLocaleDateString();
+            if (!dailyData[date]) {
+                dailyData[date] = {
+                    happy: 0, sad: 0, angry: 0, fear: 0, 
+                    surprise: 0, disgust: 0, neutral: 0, unknown: 0
+                };
+            }
+            const emotion = item.dominantEmotion || 'unknown';
+            dailyData[date][emotion]++;
+        });
+
+        const dates = Object.keys(dailyData);
+        const emotions = ['happy', 'sad', 'angry', 'fear', 'surprise', 'disgust', 'neutral', 'unknown'];
+        
+        const datasets = emotions.map(emotion => ({
+            label: emotion.charAt(0).toUpperCase() + emotion.slice(1),
+            data: dates.map(date => dailyData[date][emotion] || 0),
+            borderColor: this.getEmotionColor(emotion),
+            backgroundColor: this.getEmotionColor(emotion, 0.1),
+            borderWidth: 3,
+            tension: 0.4,
+            pointRadius: 6,
+            pointHoverRadius: 10
+        }));
+
+        this.charts.emotionTrend = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '📈 Trend Emosi per Hari (50 Entries Terbaru)',
+                        font: {
+                            size: 18,
+                            weight: 'bold'
+                        },
+                        color: '#1e293b',
+                        padding: 20
+                    },
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#8b5cf6',
+                        borderWidth: 2,
+                        cornerRadius: 8
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Tanggal',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)',
+                            drawBorder: false
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Jumlah Entries',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            beginAtZero: true
+                        }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                },
+                animation: {
+                    duration: 2000,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        });
+    }
+
+    getEmotionColor(emotion, alpha = 1) {
+        const colors = {
+            'happy': `rgba(16, 185, 129, ${alpha})`,
+            'sad': `rgba(59, 130, 246, ${alpha})`,
+            'angry': `rgba(239, 68, 68, ${alpha})`,
+            'fear': `rgba(245, 158, 11, ${alpha})`,
+            'surprise': `rgba(139, 92, 246, ${alpha})`,
+            'disgust': `rgba(5, 150, 105, ${alpha})`,
+            'neutral': `rgba(107, 114, 128, ${alpha})`,
+            'unknown': `rgba(156, 163, 175, ${alpha})`
+        };
+        return colors[emotion] || colors.unknown;
+    }
+
+    adjustBrightness(color, percent) {
+        const num = parseInt(color.replace("#", ""), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = (num >> 16) + amt;
+        const G = (num >> 8 & 0x00FF) + amt;
+        const B = (num & 0x0000FF) + amt;
+        return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+            (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+            (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+    }
+
+    capitalizeFirst(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    renderRecentEntries() {
+        const tbody = document.getElementById('recentEntriesBody');
+        if (!tbody) return;
+
+        const recentData = this.filteredData.slice(0, 10);
         
         if (recentData.length === 0) {
-            alerts.push({
-                level: 'low',
-                title: 'No Recent Activity',
-                message: 'No emotion data recorded in the last 24 hours.',
-                time: 'Just now'
-            });
-            return alerts;
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center">Belum ada data tersedia</td></tr>';
+            return;
         }
-        
-        // Calculate average stress level
-        const avgStress = recentData.reduce((sum, entry) => {
-            const negativeScore = (entry.sad || 0) + (entry.angry || 0) + (entry.fearful || 0) + (entry.disgusted || 0);
-            return sum + (negativeScore * 100);
-        }, 0) / recentData.length;
-        
-        if (avgStress > 60) {
-            alerts.push({
-                level: 'high',
-                title: 'High Stress Detected',
-                message: `Average stress level is ${Math.round(avgStress)}%. Consider team wellness activities.`,
-                time: '5 minutes ago'
-            });
-        } else if (avgStress > 40) {
-            alerts.push({
-                level: 'medium',
-                title: 'Moderate Stress Level',
-                message: `Stress level is ${Math.round(avgStress)}%. Monitor team mood closely.`,
-                time: '10 minutes ago'
-            });
-        }
-        
-        // Check for engagement patterns
-        const avgEngagement = recentData.reduce((sum, entry) => {
-            const totalEmotionIntensity = (entry.happy || 0) + (entry.sad || 0) + (entry.angry || 0) + (entry.fearful || 0) + (entry.disgusted || 0) + (entry.surprised || 0);
-            return sum + (totalEmotionIntensity * 100);
-        }, 0) / recentData.length;
-        
-        if (avgEngagement < 30) {
-            alerts.push({
-                level: 'medium',
-                title: 'Low Team Engagement',
-                message: 'Team shows low emotional engagement. Consider team building activities.',
-                time: '15 minutes ago'
-            });
-        }
-        
-        // Add positive alert if conditions are good
-        if (alerts.length === 0) {
-            alerts.push({
-                level: 'low',
-                title: 'Team Mood Stable',
-                message: 'Team emotional well-being is within normal ranges.',
-                time: 'Just now'
-            });
-        }
-        
-        return alerts;
+
+        tbody.innerHTML = recentData.map(item => `
+            <tr>
+                <td>${new Date(item.timestamp).toLocaleString()}</td>
+                <td>
+                    <span class="emotion-badge ${item.dominantEmotion}">
+                        ${item.dominantEmotion || 'Unknown'}
+                    </span>
+                </td>
+                <td>${item.confidence ? (item.confidence * 100).toFixed(1) + '%' : 'N/A'}</td>
+                <td>
+                    <span class="source-badge ${item.source}">
+                        <i class="fas ${item.source === 'webcam' ? 'fa-video' : 'fa-microphone'}"></i>
+                        ${item.source || 'Unknown'}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline" onclick="dashboard.viewEntry('${item.id}')" title="Lihat Detail">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline" onclick="dashboard.deleteEntry('${item.id}')" title="Hapus Entry">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+        // Update grafik setelah data Recent Entries berubah
+        this.updateEmotionDistributionFromRecent();
     }
 
-    // Helper methods
-    getMoodColor(value) {
-        if (value >= 70) return '#4CAF50'; // Green
-        if (value >= 40) return '#FFC107'; // Yellow
-        return '#F44336'; // Red
+    updateEmotionDistributionFromRecent() {
+        // Perbarui grafik Emotion Distribution berdasarkan data Recent Entries
+        this.renderEmotionDistributionChart();
     }
-    
-    getStressColor(value) {
-        if (value < 30) return '#4CAF50'; // Green
-        if (value < 70) return '#FFC107'; // Yellow
-        return '#F44336'; // Red
-    }
-    
-    getEngagementColor(value) {
-        if (value >= 70) return '#4CAF50'; // Green
-        if (value >= 40) return '#2196F3'; // Blue
-        return '#9E9E9E'; // Grey
-    }
-    
-    getMoodIcon(moodLevel) {
-        if (moodLevel >= 70) return 'fa-smile-beam';
-        if (moodLevel >= 40) return 'fa-meh';
-        return 'fa-frown';
-    }
-    
-    formatTimeAgo(date) {
-        const seconds = Math.floor((new Date() - date) / 1000);
-        let interval = Math.floor(seconds / 31536000);
+
+    renderActivityFeed() {
+        const feed = document.getElementById('activityFeed');
+        if (!feed) return;
+
+        const activities = this.generateActivityFeed();
+        const recentAnalysis = this.generateRecentAnalysis();
         
-        if (interval >= 1) return `${interval} year${interval === 1 ? '' : 's'} ago`;
-        interval = Math.floor(seconds / 2592000);
-        if (interval >= 1) return `${interval} month${interval === 1 ? '' : 's'} ago`;
-        interval = Math.floor(seconds / 86400);
-        if (interval >= 1) return `${interval} day${interval === 1 ? '' : 's'} ago`;
-        interval = Math.floor(seconds / 3600);
-        if (interval >= 1) return `${interval} hour${interval === 1 ? '' : 's'} ago`;
-        interval = Math.floor(seconds / 60);
-        if (interval >= 1) return `${interval} minute${interval === 1 ? '' : 's'} ago`;
-        return 'just now';
+        if (activities.length === 0 && recentAnalysis.length === 0) {
+            feed.innerHTML = '<div class="activity-item"><div class="activity-text">Belum ada aktivitas terbaru</div></div>';
+            return;
+        }
+
+        let feedHTML = '';
+
+        // Tambahkan analisis recent entries
+        if (recentAnalysis.length > 0) {
+            feedHTML += '<div class="activity-item analysis-header"><div class="activity-text"><strong>Analisis Recent Entries</strong></div></div>';
+            recentAnalysis.forEach(analysis => {
+                feedHTML += `
+                    <div class="activity-item analysis-item">
+                        <div class="activity-icon">
+                            <i class="${analysis.icon}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-text">${analysis.text}</div>
+                            <div class="activity-time">${analysis.time}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Tambahkan aktivitas biasa
+        if (activities.length > 0) {
+            feedHTML += '<div class="activity-item analysis-header"><div class="activity-text"><strong>Recent Activities</strong></div></div>';
+            activities.forEach(activity => {
+                feedHTML += `
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="${activity.icon}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-text">${activity.text}</div>
+                            <div class="activity-time">${activity.time}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        feed.innerHTML = feedHTML;
     }
-    
-    getStressLevelText(level) {
-        if (level < 30) return 'Low';
-        if (level < 70) return 'Medium';
-        return 'High';
-    }
-    
-    getEngagementText(level) {
-        if (level >= 70) return 'High';
-        if (level >= 40) return 'Medium';
-        return 'Low';
-    }
-    
-    showLoading(show) {
-        const loadingElements = document.querySelectorAll('.loading');
-        loadingElements.forEach(el => {
-            el.style.display = show ? 'block' : 'none';
+
+    generateRecentAnalysis() {
+        const recentData = this.filteredData.slice(0, 10);
+        const analysis = [];
+
+        if (recentData.length === 0) return analysis;
+
+        // Analisis distribusi emosi
+        const emotionCounts = {};
+        recentData.forEach(item => {
+            const emotion = item.dominantEmotion || 'unknown';
+            emotionCounts[emotion] = (emotionCounts[emotion] || 0) + 1;
         });
-    }
-    
-    showError(message) {
-        console.error(message);
-        const errorElement = document.createElement('div');
-        errorElement.className = 'error-message';
-        errorElement.textContent = message;
+
+        const dominantEmotion = Object.entries(emotionCounts).reduce((a, b) => 
+            emotionCounts[a] > emotionCounts[b] ? a : b);
         
-        // Insert at the top of the main content
-        const mainContent = document.querySelector('.main-content');
-        if (mainContent) {
-            mainContent.insertBefore(errorElement, mainContent.firstChild);
+        analysis.push({
+            icon: 'fas fa-chart-bar',
+            text: `Emosi dominan: ${dominantEmotion} (${emotionCounts[dominantEmotion]} entries)`,
+            time: 'Berdasarkan 10 entries terbaru'
+        });
+
+        // Analisis confidence
+        const avgConfidence = recentData.reduce((sum, item) => sum + (item.confidence || 0), 0) / recentData.length;
+        const confidenceLevel = avgConfidence > 0.8 ? 'Tinggi' : avgConfidence > 0.6 ? 'Sedang' : 'Rendah';
+        
+        analysis.push({
+            icon: 'fas fa-bullseye',
+            text: `Rata-rata confidence: ${(avgConfidence * 100).toFixed(1)}% (${confidenceLevel})`,
+            time: 'Berdasarkan 10 entries terbaru'
+        });
+
+        // Analisis trend waktu
+        const timeRange = recentData.length > 1 ? 
+            Math.abs(new Date(recentData[0].timestamp) - new Date(recentData[recentData.length - 1].timestamp)) / (1000 * 60 * 60) : 0;
+        
+        if (timeRange > 0) {
+            analysis.push({
+                icon: 'fas fa-clock',
+                text: `Rentang waktu: ${timeRange.toFixed(1)} jam`,
+                time: 'Dari entries terbaru'
+            });
+        }
+
+        // Analisis sumber data
+        const sources = {};
+        recentData.forEach(item => {
+            const source = item.source || 'unknown';
+            sources[source] = (sources[source] || 0) + 1;
+        });
+
+        const dominantSource = Object.entries(sources).reduce((a, b) => 
+            sources[a] > sources[b] ? a : b);
+        
+        analysis.push({
+            icon: 'fas fa-microchip',
+            text: `Sumber dominan: ${dominantSource} (${sources[dominantSource]} entries)`,
+            time: 'Berdasarkan 10 entries terbaru'
+        });
+
+        return analysis;
+    }
+
+    generateActivityFeed() {
+        const activities = [];
+        const now = new Date();
+
+        // Recent entries
+        this.filteredData.slice(0, 5).forEach(item => {
+            const timeAgo = this.getTimeAgo(new Date(item.timestamp));
+            activities.push({
+                icon: 'fas fa-plus-circle',
+                text: `New ${item.dominantEmotion} emotion recorded`,
+                time: timeAgo
+            });
+        });
+
+        // System activities
+        if (this.filteredData.length > 0) {
+            activities.push({
+                icon: 'fas fa-sync-alt',
+                text: 'Data synchronized successfully',
+                time: this.getTimeAgo(now)
+            });
+        }
+
+        return activities.sort((a, b) => new Date(b.time) - new Date(a.time));
+    }
+
+    renderStorageStatus() {
+        const status = document.getElementById('storageStatus');
+        if (!status) return;
+
+        const storageInfo = this.getStorageInfo();
+        
+        status.innerHTML = `
+            <div class="status-item">
+                <span class="status-label">Records:</span>
+                <span class="status-value">${storageInfo.records}</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Storage:</span>
+                <span class="status-value">${storageInfo.storage}</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Last Update:</span>
+                <span class="status-value">${storageInfo.lastUpdate}</span>
+            </div>
+        `;
+    }
+
+    getStorageInfo() {
+        const records = this.data.length;
+        const storage = this.storage.getStorageMode ? this.storage.getStorageMode() : 'Local';
+        const lastUpdate = this.data.length > 0 
+            ? this.getTimeAgo(new Date(this.data[0].timestamp))
+            : 'Never';
+
+        return { records, storage, lastUpdate };
+    }
+
+    getTimeAgo(date) {
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
+
+        if (diffInSeconds < 60) return 'Just now';
+        if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+        if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+        return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    }
+
+    async exportData(format) {
+        try {
+            let data, filename, mimeType;
+
+            switch (format) {
+                case 'json':
+                    data = JSON.stringify(this.data, null, 2);
+                    filename = `emotion-data-${new Date().toISOString().split('T')[0]}.json`;
+                    mimeType = 'application/json';
+                    break;
+                case 'csv':
+                    data = this.convertToCSV(this.data);
+                    filename = `emotion-data-${new Date().toISOString().split('T')[0]}.csv`;
+                    mimeType = 'text/csv';
+                    break;
+                default:
+                    throw new Error('Unsupported format');
+            }
+
+            const blob = new Blob([data], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            this.showSuccess(`Data exported as ${format.toUpperCase()}`);
+        } catch (error) {
+            console.error('Export failed:', error);
+            this.showError('Export failed');
+        }
+    }
+
+    convertToCSV(data) {
+        if (data.length === 0) return '';
+        
+        const headers = Object.keys(data[0]);
+        const csvRows = [headers.join(',')];
+        
+        data.forEach(item => {
+            const values = headers.map(header => {
+                const value = item[header];
+                return typeof value === 'string' ? `"${value}"` : value;
+            });
+            csvRows.push(values.join(','));
+        });
+        
+        return csvRows.join('\n');
+    }
+
+    async viewEntry(id) {
+        const entry = this.data.find(item => item.id === id);
+        if (!entry) {
+            this.showError('Entry not found');
+            return;
+        }
+
+        const details = `
+            ID: ${entry.id}
+            Timestamp: ${new Date(entry.timestamp).toLocaleString()}
+            Emotion: ${entry.dominantEmotion}
+            Confidence: ${entry.confidence ? (entry.confidence * 100).toFixed(1) + '%' : 'N/A'}
+            Source: ${entry.source || 'Unknown'}
+            User ID: ${entry.userId || 'Unknown'}
+        `;
+
+        alert(details);
+    }
+
+    async deleteEntry(id) {
+        if (!confirm('Apakah Anda yakin ingin menghapus entry ini?')) return;
+
+        try {
+            console.log(`Attempting to delete entry with ID: ${id}`);
             
-            // Auto-remove after 5 seconds
+            // Check if storage is available
+            if (!this.storage) {
+                throw new Error('Storage system not available');
+            }
+
+            // Check if deleteEmotionData method exists
+            if (typeof this.storage.deleteEmotionData !== 'function') {
+                throw new Error('Delete method not available in storage system');
+            }
+
+            // Debug: Check data before deletion
+            const beforeData = await this.storage.getEmotionData({ limit: 1000 });
+            const targetEntry = beforeData.find(item => item.id === id);
+            
+            if (!targetEntry) {
+                throw new Error('Entry not found or already deleted');
+            }
+            
+            console.log('Found entry to delete:', targetEntry);
+            console.log(`Total entries before deletion: ${beforeData.length}`);
+
+            // Attempt to delete the entry
+            const result = await this.storage.deleteEmotionData(id);
+            
+            if (result === false) {
+                throw new Error('Delete operation returned false');
+            }
+
+            // Debug: Check data after deletion
+            const afterData = await this.storage.getEmotionData({ limit: 1000 });
+            console.log(`Total entries after deletion: ${afterData.length}`);
+            
+            const stillExists = afterData.find(item => item.id === id);
+            if (stillExists) {
+                throw new Error('Entry still exists after deletion');
+            }
+
+            console.log(`Successfully deleted entry with ID: ${id}`);
+            
+            // Refresh the dashboard data
+            await this.refreshData();
+            
+            this.showSuccess('Entry berhasil dihapus');
+        } catch (error) {
+            console.error('Delete failed:', error);
+            
+            // Provide more specific error messages
+            let errorMessage = 'Gagal menghapus entry';
+            
+            if (error.message.includes('not found')) {
+                errorMessage = 'Entry tidak ditemukan atau sudah dihapus';
+            } else if (error.message.includes('not available')) {
+                errorMessage = 'Sistem penyimpanan tidak tersedia';
+            } else if (error.message.includes('Delete method')) {
+                errorMessage = 'Metode hapus tidak tersedia';
+            } else if (error.message.includes('returned false')) {
+                errorMessage = 'Operasi hapus gagal';
+            } else if (error.message.includes('still exists')) {
+                errorMessage = 'Entry masih ada setelah operasi hapus';
+            }
+            
+            this.showError(errorMessage);
+        }
+    }
+
+    addDummyDataButton() {
+        const headerActions = document.querySelector('.header-actions');
+        if (!headerActions) return;
+
+        const dummyBtn = document.createElement('button');
+        dummyBtn.className = 'btn btn-outline';
+        dummyBtn.innerHTML = '<i class="fas fa-database"></i> Add Dummy Data';
+        dummyBtn.onclick = () => this.insertDummyData();
+        
+        headerActions.appendChild(dummyBtn);
+    }
+
+    async insertDummyData() {
+        const dummyData = [
+            { id: "1", timestamp: new Date(Date.now() - 3600 * 1000 * 2).toISOString(), dominantEmotion: "happy", confidence: 0.92, userId: "user1", source: "webcam" },
+            { id: "2", timestamp: new Date(Date.now() - 3600 * 1000 * 5).toISOString(), dominantEmotion: "sad", confidence: 0.81, userId: "user2", source: "microphone" },
+            { id: "3", timestamp: new Date(Date.now() - 3600 * 1000 * 8).toISOString(), dominantEmotion: "angry", confidence: 0.77, userId: "user3", source: "webcam" },
+            { id: "4", timestamp: new Date(Date.now() - 3600 * 1000 * 12).toISOString(), dominantEmotion: "neutral", confidence: 0.65, userId: "user1", source: "webcam" },
+            { id: "5", timestamp: new Date(Date.now() - 3600 * 1000 * 15).toISOString(), dominantEmotion: "happy", confidence: 0.88, userId: "user2", source: "microphone" },
+            { id: "6", timestamp: new Date(Date.now() - 3600 * 1000 * 20).toISOString(), dominantEmotion: "surprise", confidence: 0.73, userId: "user3", source: "webcam" },
+            { id: "7", timestamp: new Date(Date.now() - 3600 * 1000 * 22).toISOString(), dominantEmotion: "fear", confidence: 0.69, userId: "user1", source: "microphone" }
+        ];
+
+        try {
+            console.log('Inserting dummy data...');
+            
+            // Check if storage has the required method
+            const saveMethod = this.storage.addEmotionData || this.storage.saveEmotionData;
+            if (!saveMethod) {
+                throw new Error('No save method available in storage');
+            }
+
+            for (const entry of dummyData) {
+                console.log(`Inserting entry: ${entry.id}`);
+                await saveMethod.call(this.storage, entry);
+            }
+            
+            console.log('Dummy data inserted successfully');
+            await this.refreshData();
+            this.showSuccess('Data dummy berhasil ditambahkan!');
+        } catch (error) {
+            console.error('Failed to insert dummy data:', error);
+            this.showError('Gagal menambahkan data dummy: ' + error.message);
+        }
+    }
+
+    showLoading() {
+        document.body.classList.add('loading');
+    }
+
+    hideLoading() {
+        document.body.classList.remove('loading');
+    }
+
+    showMessage(message, type = 'info') {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type} fade-in`;
+        messageDiv.textContent = message;
+        
+        const container = document.querySelector('.dashboard-content');
+        if (container) {
+            container.insertBefore(messageDiv, container.firstChild);
+            
             setTimeout(() => {
-                errorElement.style.opacity = '0';
-                setTimeout(() => errorElement.remove(), 300);
+                messageDiv.remove();
             }, 5000);
         }
     }
 
-    async refreshData() {
-        try {
-            await this.loadDashboardData();
-        } catch (error) {
-            console.error('Error refreshing dashboard data:', error);
-        }
+    showSuccess(message) {
+        this.showMessage(message, 'success');
     }
 
-    cleanup() {
-        try {
-            // Destroy chart to prevent memory leaks
-            if (this.chart) {
-                this.chart.destroy();
-                this.chart = null;
-            }
-            
-            // Remove event listeners
-            if (this.chartTypeSelect) {
-                this.chartTypeSelect.removeEventListener('change', this.updateChartType);
-            }
-            
-            this.periodButtons.forEach(button => {
-                button.removeEventListener('click', this.updateTimePeriod);
-            });
-            
-            // Remove mobile menu event listeners
-            const menuToggle = document.getElementById('menuToggle');
-            const sidebarClose = document.getElementById('sidebarClose');
-            const sidebarOverlay = document.getElementById('sidebarOverlay');
-            
-            if (menuToggle) {
-                menuToggle.removeEventListener('click', this.setupMobileMenu);
-            }
-            
-            if (sidebarClose) {
-                sidebarClose.removeEventListener('click', this.closeMobileMenu);
-            }
-            
-            if (sidebarOverlay) {
-                sidebarOverlay.removeEventListener('click', this.closeMobileMenu);
-            }
-            
-            console.log('Dashboard cleanup completed');
-        } catch (error) {
-            console.error('Error during cleanup:', error);
-        }
+    showError(message) {
+        this.showMessage(message, 'error');
+    }
+
+    showWarning(message) {
+        this.showMessage(message, 'warning');
+    }
+
+    showInfo(message) {
+        this.showMessage(message, 'info');
     }
 }
 
 // Initialize dashboard when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    if (AuthService.isAuthenticated()) {
-        window.dashboard = new Dashboard();
-    } else {
-        window.location.href = 'login.html';
-    }
+    window.dashboard = new Dashboard();
 });
+
+// Export for global access
+window.Dashboard = Dashboard;

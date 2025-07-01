@@ -9,6 +9,7 @@
     <meta name="format-detection" content="telephone=no">
     <title>History - TeamPulse</title>
     <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/sidebar.css">
     <link rel="stylesheet" href="css/history.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -42,342 +43,341 @@
             <i class="fas fa-bars"></i>
         </button>
 
-        <!-- Sidebar Overlay -->
-        <div id="sidebarOverlay" class="sidebar-overlay"></div>
-
-        <!-- Main Content Area -->
-        <div class="content-area">
-            <div class="main-content">
-                <!-- Section Header -->
-                <div class="section-header">
-                    <h2>Emotion History & Analytics</h2>
-                    <p>Track and analyze your emotional journey over time</p>
-                </div>
-
-                <!-- Filters and Search -->
-                <div class="filters-section">
-                    <div class="filters-grid">
-                        <div class="filter-group">
-                            <label for="dateRange" class="form-label">Date Range</label>
-                            <select id="dateRange" class="form-select">
-                                <option value="7">Last 7 days</option>
-                                <option value="30" selected>Last 30 days</option>
-                                <option value="90">Last 3 months</option>
-                                <option value="365">Last year</option>
-                                <option value="custom">Custom range</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label for="emotionFilter" class="form-label">Emotion Type</label>
-                            <select id="emotionFilter" class="form-select">
-                                <option value="all">All Emotions</option>
-                                <option value="happy">Happy</option>
-                                <option value="sad">Sad</option>
-                                <option value="angry">Angry</option>
-                                <option value="neutral">Neutral</option>
-                                <option value="surprised">Surprised</option>
-                                <option value="fearful">Fearful</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label for="inputType" class="form-label">Input Type</label>
-                            <select id="inputType" class="form-select">
-                                <option value="all">All Types</option>
-                                <option value="camera">Camera</option>
-                                <option value="audio">Audio</option>
-                                <option value="text">Text</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label for="searchInput" class="form-label">Search</label>
-                            <input type="text" id="searchInput" class="form-input" placeholder="Search emotions, notes...">
-                        </div>
+        <div class="history-container">
+            <!-- Main Content Area -->
+            <div class="content-area">
+                <div class="main-content">
+                    <!-- Section Header -->
+                    <div class="section-header">
+                        <h2>Emotion History & Analytics</h2>
+                        <p>Track and analyze your emotional journey over time</p>
                     </div>
-                    <div class="filter-actions">
-                        <button id="applyFilters" class="btn btn-primary">
-                            <i class="fas fa-filter"></i>
-                            Apply Filters
-                        </button>
-                        <button id="clearFilters" class="btn btn-outline">
-                            <i class="fas fa-eraser"></i>
-                            Clear All
-                        </button>
-                        <button id="exportData" class="btn btn-secondary">
-                            <i class="fas fa-download"></i>
-                            Export Data
-                        </button>
-                    </div>
-                </div>
 
-                <!-- Statistics Overview -->
-                <div class="stats-overview">
-                    <div class="grid grid-cols-4">
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-chart-line"></i>
+                    <!-- Filters and Search -->
+                    <div class="filters-section">
+                        <div class="filters-grid">
+                            <div class="filter-group">
+                                <label for="dateRange" class="form-label">Date Range</label>
+                                <select id="dateRange" class="form-select">
+                                    <option value="7">Last 7 days</option>
+                                    <option value="30" selected>Last 30 days</option>
+                                    <option value="90">Last 3 months</option>
+                                    <option value="365">Last year</option>
+                                    <option value="custom">Custom range</option>
+                                </select>
                             </div>
-                            <div class="stat-content">
-                                <h3>Total Entries</h3>
-                                <div class="stat-value" id="totalEntries">1,247</div>
-                                <div class="stat-change positive">+12% this month</div>
+                            <div class="filter-group">
+                                <label for="emotionFilter" class="form-label">Emotion Type</label>
+                                <select id="emotionFilter" class="form-select">
+                                    <option value="all">All Emotions</option>
+                                    <option value="happy">Happy</option>
+                                    <option value="sad">Sad</option>
+                                    <option value="angry">Angry</option>
+                                    <option value="neutral">Neutral</option>
+                                    <option value="surprised">Surprised</option>
+                                    <option value="fearful">Fearful</option>
+                                </select>
                             </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-smile"></i>
+                            <div class="filter-group">
+                                <label for="inputType" class="form-label">Input Type</label>
+                                <select id="inputType" class="form-select">
+                                    <option value="all">All Types</option>
+                                    <option value="camera">Camera</option>
+                                    <option value="audio">Audio</option>
+                                    <option value="text">Text</option>
+                                </select>
                             </div>
-                            <div class="stat-content">
-                                <h3>Average Mood</h3>
-                                <div class="stat-value" id="avgMood">7.8/10</div>
-                                <div class="stat-change positive">+0.5 from last month</div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-calendar-check"></i>
-                            </div>
-                            <div class="stat-content">
-                                <h3>Streak Days</h3>
-                                <div class="stat-value" id="streakDays">15</div>
-                                <div class="stat-change">Current streak</div>
-                            </div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-icon">
-                                <i class="fas fa-trending-up"></i>
-                            </div>
-                            <div class="stat-content">
-                                <h3>Improvement</h3>
-                                <div class="stat-value" id="improvement">+18%</div>
-                                <div class="stat-change positive">vs last month</div>
+                            <div class="filter-group">
+                                <label for="searchInput" class="form-label">Search</label>
+                                <input type="text" id="searchInput" class="form-input" placeholder="Search emotions, notes...">
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- History Table -->
-                <div class="history-table-container">
-                    <div class="table-header">
-                        <h3>Emotion History</h3>
-                        <div class="table-actions">
-                            <button id="refreshTable" class="btn btn-sm btn-outline">
-                                <i class="fas fa-sync-alt"></i>
-                                Refresh
+                        <div class="filter-actions">
+                            <button id="applyFilters" class="btn btn-primary">
+                                <i class="fas fa-filter"></i>
+                                Apply Filters
                             </button>
-                            <button id="bulkActions" class="btn btn-sm btn-outline">
-                                <i class="fas fa-tasks"></i>
-                                Bulk Actions
+                            <button id="clearFilters" class="btn btn-outline">
+                                <i class="fas fa-eraser"></i>
+                                Clear All
+                            </button>
+                            <button id="exportData" class="btn btn-secondary">
+                                <i class="fas fa-download"></i>
+                                Export Data
                             </button>
                         </div>
                     </div>
-                    <div class="table-wrapper">
-                        <table class="history-table">
-                            <thead>
-                                <tr>
-                                    <th>
-                                        <input type="checkbox" id="selectAll">
-                                    </th>
-                                    <th>Date & Time</th>
-                                    <th>Emotion</th>
-                                    <th>Confidence</th>
-                                    <th>Input Type</th>
-                                    <th>Notes</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="historyTableBody">
-                                <!-- Sample data rows -->
-                                <tr>
-                                    <td><input type="checkbox" class="row-checkbox"></td>
-                                    <td>
-                                        <div class="datetime-cell">
-                                            <div class="date">Dec 15, 2024</div>
-                                            <div class="time">09:30 AM</div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="emotion-cell">
-                                            <span class="emotion-icon">😊</span>
-                                            <span class="emotion-label">Happy</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="confidence-cell">
-                                            <div class="progress">
-                                                <div class="progress-bar" style="width: 92%"></div>
-                                            </div>
-                                            <span>92%</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="input-type camera">
-                                            <i class="fas fa-camera"></i>
-                                            Camera
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="notes-cell">
-                                            Feeling great about the project progress
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge success">Completed</span>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn btn-sm btn-outline" title="View Details">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-danger" title="Delete">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><input type="checkbox" class="row-checkbox"></td>
-                                    <td>
-                                        <div class="datetime-cell">
-                                            <div class="date">Dec 14, 2024</div>
-                                            <div class="time">02:15 PM</div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="emotion-cell">
-                                            <span class="emotion-icon">😐</span>
-                                            <span class="emotion-label">Neutral</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="confidence-cell">
-                                            <div class="progress">
-                                                <div class="progress-bar" style="width: 78%"></div>
-                                            </div>
-                                            <span>78%</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="input-type audio">
-                                            <i class="fas fa-microphone"></i>
-                                            Audio
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="notes-cell">
-                                            Regular check-in, feeling balanced
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge success">Completed</span>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn btn-sm btn-outline" title="View Details">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-danger" title="Delete">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><input type="checkbox" class="row-checkbox"></td>
-                                    <td>
-                                        <div class="datetime-cell">
-                                            <div class="date">Dec 13, 2024</div>
-                                            <div class="time">11:45 AM</div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="emotion-cell">
-                                            <span class="emotion-icon">😔</span>
-                                            <span class="emotion-label">Sad</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="confidence-cell">
-                                            <div class="progress">
-                                                <div class="progress-bar" style="width: 85%"></div>
-                                            </div>
-                                            <span>85%</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="input-type text">
-                                            <i class="fas fa-keyboard"></i>
-                                            Text
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="notes-cell">
-                                            Feeling overwhelmed with workload
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge warning">Needs Review</span>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="btn btn-sm btn-outline" title="View Details">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-danger" title="Delete">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
 
-                <!-- Pagination -->
-                <div class="pagination-container">
-                    <div class="pagination-info">
-                        Showing <span id="startIndex">1</span> to <span id="endIndex">10</span> of <span id="totalItems">1,247</span> entries
-                    </div>
-                    <div class="pagination-controls">
-                        <button class="btn btn-sm btn-outline" id="firstPage" disabled>
-                            <i class="fas fa-angle-double-left"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline" id="prevPage" disabled>
-                            <i class="fas fa-angle-left"></i>
-                        </button>
-                        <div class="page-numbers">
-                            <button class="btn btn-sm btn-primary">1</button>
-                            <button class="btn btn-sm btn-outline">2</button>
-                            <button class="btn btn-sm btn-outline">3</button>
-                            <span class="page-ellipsis">...</span>
-                            <button class="btn btn-sm btn-outline">125</button>
+                    <!-- Statistics Overview -->
+                    <div class="stats-overview">
+                        <div class="grid grid-cols-4">
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3>Total Entries</h3>
+                                    <div class="stat-value" id="totalEntries">1,247</div>
+                                    <div class="stat-change positive">+12% this month</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-smile"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3>Average Mood</h3>
+                                    <div class="stat-value" id="avgMood">7.8/10</div>
+                                    <div class="stat-change positive">+0.5 from last month</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3>Streak Days</h3>
+                                    <div class="stat-value" id="streakDays">15</div>
+                                    <div class="stat-change">Current streak</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-trending-up"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3>Improvement</h3>
+                                    <div class="stat-value" id="improvement">+18%</div>
+                                    <div class="stat-change positive">vs last month</div>
+                                </div>
+                            </div>
                         </div>
-                        <button class="btn btn-sm btn-outline" id="nextPage">
-                            <i class="fas fa-angle-right"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline" id="lastPage">
-                            <i class="fas fa-angle-double-right"></i>
-                        </button>
                     </div>
-                    <div class="pagination-size">
-                        <label for="pageSize">Show:</label>
-                        <select id="pageSize" class="form-select">
-                            <option value="10">10</option>
-                            <option value="25" selected>25</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                        </select>
-                        <span>entries per page</span>
+
+                    <!-- History Table -->
+                    <div class="history-table-container">
+                        <div class="table-header">
+                            <h3>Emotion History</h3>
+                            <div class="table-actions">
+                                <button id="refreshTable" class="btn btn-sm btn-outline">
+                                    <i class="fas fa-sync-alt"></i>
+                                    Refresh
+                                </button>
+                                <button id="bulkActions" class="btn btn-sm btn-outline">
+                                    <i class="fas fa-tasks"></i>
+                                    Bulk Actions
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="history-table">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            <input type="checkbox" id="selectAll">
+                                        </th>
+                                        <th>Date & Time</th>
+                                        <th>Emotion</th>
+                                        <th>Confidence</th>
+                                        <th>Input Type</th>
+                                        <th>Notes</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="historyTableBody">
+                                    <!-- Sample data rows -->
+                                    <tr>
+                                        <td><input type="checkbox" class="row-checkbox"></td>
+                                        <td>
+                                            <div class="datetime-cell">
+                                                <div class="date">Dec 15, 2024</div>
+                                                <div class="time">09:30 AM</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="emotion-cell">
+                                                <span class="emotion-icon">😊</span>
+                                                <span class="emotion-label">Happy</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="confidence-cell">
+                                                <div class="progress">
+                                                    <div class="progress-bar" style="width: 92%"></div>
+                                                </div>
+                                                <span>92%</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="input-type camera">
+                                                <i class="fas fa-camera"></i>
+                                                Camera
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="notes-cell">
+                                                Feeling great about the project progress
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="status-badge success">Completed</span>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="btn btn-sm btn-outline" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-danger" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="checkbox" class="row-checkbox"></td>
+                                        <td>
+                                            <div class="datetime-cell">
+                                                <div class="date">Dec 14, 2024</div>
+                                                <div class="time">02:15 PM</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="emotion-cell">
+                                                <span class="emotion-icon">😐</span>
+                                                <span class="emotion-label">Neutral</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="confidence-cell">
+                                                <div class="progress">
+                                                    <div class="progress-bar" style="width: 78%"></div>
+                                                </div>
+                                                <span>78%</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="input-type audio">
+                                                <i class="fas fa-microphone"></i>
+                                                Audio
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="notes-cell">
+                                                Regular check-in, feeling balanced
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="status-badge success">Completed</span>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="btn btn-sm btn-outline" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-danger" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><input type="checkbox" class="row-checkbox"></td>
+                                        <td>
+                                            <div class="datetime-cell">
+                                                <div class="date">Dec 13, 2024</div>
+                                                <div class="time">11:45 AM</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="emotion-cell">
+                                                <span class="emotion-icon">😔</span>
+                                                <span class="emotion-label">Sad</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="confidence-cell">
+                                                <div class="progress">
+                                                    <div class="progress-bar" style="width: 85%"></div>
+                                                </div>
+                                                <span>85%</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="input-type text">
+                                                <i class="fas fa-keyboard"></i>
+                                                Text
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="notes-cell">
+                                                Feeling overwhelmed with workload
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="status-badge warning">Needs Review</span>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="btn btn-sm btn-outline" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-danger" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="pagination-container">
+                        <div class="pagination-info">
+                            Showing <span id="startIndex">1</span> to <span id="endIndex">10</span> of <span id="totalItems">1,247</span> entries
+                        </div>
+                        <div class="pagination-controls">
+                            <button class="btn btn-sm btn-outline" id="firstPage" disabled>
+                                <i class="fas fa-angle-double-left"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline" id="prevPage" disabled>
+                                <i class="fas fa-angle-left"></i>
+                            </button>
+                            <div class="page-numbers">
+                                <button class="btn btn-sm btn-primary">1</button>
+                                <button class="btn btn-sm btn-outline">2</button>
+                                <button class="btn btn-sm btn-outline">3</button>
+                                <span class="page-ellipsis">...</span>
+                                <button class="btn btn-sm btn-outline">125</button>
+                            </div>
+                            <button class="btn btn-sm btn-outline" id="nextPage">
+                                <i class="fas fa-angle-right"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline" id="lastPage">
+                                <i class="fas fa-angle-double-right"></i>
+                            </button>
+                        </div>
+                        <div class="pagination-size">
+                            <label for="pageSize">Show:</label>
+                            <select id="pageSize" class="form-select">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                            <span>entries per page</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -516,18 +516,15 @@
         document.addEventListener('DOMContentLoaded', function() {
             const menuToggle = document.getElementById('menuToggle');
             const sidebar = document.getElementById('sidebar');
-            const sidebarOverlay = document.getElementById('sidebarOverlay');
             const sidebarClose = document.getElementById('sidebarClose');
 
             function openMobileMenu() {
                 sidebar.classList.add('active');
-                sidebarOverlay.classList.add('active');
                 document.body.style.overflow = 'hidden';
             }
 
             function closeMobileMenu() {
                 sidebar.classList.remove('active');
-                sidebarOverlay.classList.remove('active');
                 document.body.style.overflow = '';
             }
 
@@ -537,10 +534,6 @@
 
             if (sidebarClose) {
                 sidebarClose.addEventListener('click', closeMobileMenu);
-            }
-
-            if (sidebarOverlay) {
-                sidebarOverlay.addEventListener('click', closeMobileMenu);
             }
 
             // Close menu when clicking on navigation links

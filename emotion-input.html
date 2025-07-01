@@ -2,607 +2,343 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
-    <meta name="theme-color" content="#2c3e50">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Emotion Input - TeamPulse</title>
     <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/sidebar.css">
     <link rel="stylesheet" href="css/emotion-input.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Load TensorFlow.js and face-api.js with versions known to work well together -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.7.4/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    
+    <!-- Load AI Libraries -->
+    <script src="js/tf.min.js"></script>
+    <!-- Menggunakan face-api.js lokal -->
+    <script src="models/face-api.min.js"></script>
+    <script src="js/meyda.min.js"></script>
 </head>
 <body>
-    <div class="dashboard-container">
-        <!-- Sidebar -->
-        <aside id="sidebar" class="sidebar">
-            <div class="sidebar-header">
-                <h2>TeamPulse</h2>
-                <button id="sidebarClose" class="sidebar-close" aria-label="Close sidebar">
-                    <i class="fas fa-times"></i>
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h2>TeamPulse</h2>
+            <button id="sidebarCloseBtn" class="sidebar-close-btn" aria-label="Close Sidebar">&times;</button>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
+                <li><a href="emotion-input.html" class="active"><i class="fas fa-camera"></i>Emotion Input</a></li>
+                <li><a href="history.html"><i class="fas fa-history"></i>History</a></li>
+                <li><a href="feedback.html"><i class="fas fa-comments"></i>Feedback</a></li>
+                <li><a href="settings.html"><i class="fas fa-cog"></i>Settings</a></li>
+                <li><a href="index.html"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
+            </ul>
+        </nav>
+    </aside>
+
+    <!-- Mobile Menu Toggle -->
+    <button id="menuToggle" class="menu-toggle" aria-label="Toggle navigation menu">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <div class="emotion-input-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-brain"></i> AI Emotion Analysis</h1>
+                <div class="header-actions">
+                    <button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </button>
+                    <button class="btn btn-info" id="exportBtn">
+                        <i class="fas fa-download"></i> Export Data
+                    </button>
+                    <button class="btn btn-outline" onclick="window.location.href='settings.html'">
+                        <i class="fas fa-cog"></i> Settings
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Session Info -->
+        <div class="session-info">
+            <div class="session-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Session Duration:</span>
+                    <span class="stat-value" id="sessionDuration">00:00:00</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">AI Analysis:</span>
+                    <span class="stat-value" id="analysisCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Storage:</span>
+                    <span class="stat-value" id="storageStatus">Loading...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Input Methods Tabs -->
+            <div class="input-tabs">
+                <button class="tab-btn active" data-tab="camera">
+                    <i class="fas fa-camera"></i> Camera Analysis
+                </button>
+                <button class="tab-btn" data-tab="audio">
+                    <i class="fas fa-microphone"></i> Voice Analysis
+                </button>
+                <button class="tab-btn" data-tab="text">
+                    <i class="fas fa-keyboard"></i> AI Text Analysis
                 </button>
             </div>
-            <nav>
-                <ul>
-                    <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i>Dashboard</a></li>
-                    <li><a href="emotion-input.html" class="active"><i class="fas fa-camera"></i>Emotion Input</a></li>
-                    <li><a href="history.html"><i class="fas fa-history"></i>History</a></li>
-                    <li><a href="feedback.html"><i class="fas fa-comments"></i>Feedback</a></li>
-                    <li><a href="settings.html"><i class="fas fa-cog"></i>Settings</a></li>
-                    <li><a href="index.html"><i class="fas fa-sign-out-alt"></i>Logout</a></li>
-                </ul>
-            </nav>
-        </aside>
-
-        <!-- Mobile Menu Toggle -->
-        <button id="menuToggle" class="menu-toggle" aria-label="Toggle navigation menu">
-            <i class="fas fa-bars"></i>
-        </button>
-
-        <!-- Sidebar Overlay -->
-        <div id="sidebarOverlay" class="sidebar-overlay"></div>
-
-        <!-- Main Content Area -->
-        <div class="content-area">
-            <div class="main-content">
-                <!-- Section Header -->
-                <div class="section-header">
-                    <h2>Emotion Input & Analysis</h2>
-                    <p>Capture and analyze emotions through facial expressions and voice</p>
-                </div>
-
-                <!-- Loading Indicator -->
-                <div id="loadingIndicator" class="loading-indicator" style="display: none;">
-                    <div class="loading-spinner"></div>
-                    <p>Loading AI models... Please wait</p>
-                </div>
-
-                <!-- Error Message -->
-                <div id="errorMessage" class="error-message" style="display: none;">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <span id="errorText"></span>
-                    <button id="retryButton" class="btn btn-primary">Retry</button>
-                </div>
-
-                <!-- Input Methods Tabs -->
-                <div class="input-tabs">
-                    <button class="tab-btn active" data-tab="camera">
-                        <i class="fas fa-camera"></i>
-                        Camera Detection
-                    </button>
-                    <button class="tab-btn" data-tab="audio">
-                        <i class="fas fa-microphone"></i>
-                        Audio Analysis
-                    </button>
-                    <button class="tab-btn" data-tab="text">
-                        <i class="fas fa-keyboard"></i>
-                        Text Input
-                    </button>
-                </div>
-
-                <!-- Camera Input Section -->
+            <div class="input-sections">
+                <!-- Camera Analysis Section -->
                 <div class="input-section active" id="camera-section">
-                    <div class="input-card">
-                        <div class="card-header">
-                            <h3>Facial Expression Analysis</h3>
-                            <p>Position your face in the camera view for emotion detection</p>
-                        </div>
-                        <div class="card-body">
-                            <div class="media-container">
-                                <video id="video" width="640" height="480" autoplay muted></video>
-                                <canvas id="canvas" width="640" height="480"></canvas>
-                                <div class="detection-overlay" id="detectionOverlay">
-                                    <div class="detection-box" id="detectionBox"></div>
-                                </div>
-                            </div>
-                            <div class="controls">
-                                <button id="startCamera" class="btn btn-primary">
-                                    <i class="fas fa-play"></i>
-                                    Start Camera
-                                </button>
-                                <button id="captureEmotion" class="btn btn-secondary" disabled>
-                                    <i class="fas fa-camera"></i>
-                                    Capture Emotion
-                                </button>
-                                <button id="stopCamera" class="btn btn-outline" disabled>
-                                    <i class="fas fa-stop"></i>
-                                    Stop Camera
-                                </button>
-                            </div>
-                            <div class="status-message" id="cameraStatus">
-                                Click "Start Camera" to begin facial emotion detection
-                            </div>
-                            <div class="camera-note" style="font-size:0.95em;color:#888;margin-top:4px;">
-                                Jika kamera tidak bisa diakses, pastikan tidak ada tab lain yang sedang menggunakan kamera dan browser sudah mengizinkan akses kamera.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Audio Input Section -->
-                <div class="input-section" id="audio-section">
-                    <div class="input-card">
-                        <div class="card-header">
-                            <h3>Voice Emotion Analysis</h3>
-                            <p>Speak to analyze emotional tone and sentiment</p>
-                        </div>
-                        <div class="card-body">
-                            <div class="audio-container">
-                                <div class="audio-visualizer" id="audioVisualizer">
-                                    <canvas id="audioCanvas" width="600" height="200"></canvas>
-                                </div>
-                                <div class="audio-controls">
-                                    <button id="startRecording" class="btn btn-primary">
-                                        <i class="fas fa-microphone"></i>
-                                        Start Recording
-                                    </button>
-                                    <button id="stopRecording" class="btn btn-secondary" disabled>
-                                        <i class="fas fa-stop"></i>
-                                        Stop Recording
-                                    </button>
-                                    <button id="playRecording" class="btn btn-outline" disabled>
-                                        <i class="fas fa-play"></i>
-                                        Play Recording
-                                    </button>
-                                </div>
-                                <div class="recording-status" id="recordingStatus">
-                                    Click "Start Recording" to begin voice analysis
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Text Input Section -->
-                <div class="input-section" id="text-section">
-                    <div class="input-card">
-                        <div class="card-header">
-                            <h3>Text Emotion Analysis</h3>
-                            <p>Enter text to analyze emotional content and sentiment</p>
-                        </div>
-                        <div class="card-body">
-                            <div class="text-input-container">
-                                <div class="form-group">
-                                    <label for="emotionText" class="form-label">Describe your current emotion or mood:</label>
-                                    <textarea id="emotionText" class="form-textarea" rows="6" 
-                                        placeholder="How are you feeling today? Describe your emotions, mood, or any specific feelings you're experiencing..."></textarea>
-                                </div>
-                                <div class="text-controls">
-                                    <button id="analyzeText" class="btn btn-primary">
-                                        <i class="fas fa-brain"></i>
-                                        Analyze Text
-                                    </button>
-                                    <button id="clearText" class="btn btn-outline">
-                                        <i class="fas fa-eraser"></i>
-                                        Clear Text
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Results Section -->
-                <div class="results-section" id="resultsSection" style="display: none;">
-                    <div class="results-card">
-                        <div class="card-header">
-                            <h3>Emotion Analysis Results</h3>
-                            <button id="closeResults" class="btn btn-sm btn-outline">
-                                <i class="fas fa-times"></i>
+                    <div class="section-content">
+                        <h3>Real-time Facial Expression Analysis</h3>
+                        <p>AI akan menganalisis ekspresi wajah Anda secara real-time untuk mendeteksi emosi.</p>
+                        
+                        <div class="camera-controls">
+                            <button class="btn btn-primary" id="startCameraBtn">
+                                <i class="fas fa-camera"></i> Start Camera
+                            </button>
+                            <button class="btn btn-danger" id="stopCameraBtn" disabled>
+                                <i class="fas fa-stop"></i> Stop Camera
+                            </button>
+                            <button class="btn btn-success" id="captureSnapshotBtn" disabled>
+                                <i class="fas fa-camera-retro"></i> Capture Snapshot
                             </button>
                         </div>
-                        <div class="card-body">
-                            <div class="results-grid">
-                                <div class="result-item">
-                                    <h4>Primary Emotion</h4>
-                                    <div class="emotion-display" id="primaryEmotion">
-                                        <span class="emotion-icon">😊</span>
-                                        <span class="emotion-label">Happy</span>
-                                    </div>
-                                </div>
-                                <div class="result-item">
-                                    <h4>Confidence Level</h4>
-                                    <div class="confidence-meter">
-                                        <div class="progress">
-                                            <div class="progress-bar" id="confidenceBar" style="width: 85%"></div>
-                                        </div>
-                                        <span class="confidence-text" id="confidenceText">85%</span>
-                                    </div>
-                                </div>
-                                <div class="result-item">
-                                    <h4>Mood Score</h4>
-                                    <div class="mood-score" id="moodScore">8.5/10</div>
-                                </div>
-                                <div class="result-item">
-                                    <h4>Stress Level</h4>
-                                    <div class="stress-indicator" id="stressIndicator">Low</div>
+
+                        <div class="camera-status">
+                            <span id="cameraStatus">Camera not active</span>
+                        </div>
+
+                        <div class="camera-container">
+                            <video id="cameraVideo" autoplay muted playsinline></video>
+                            <canvas id="cameraCanvas" width="640" height="480"></canvas>
+                        </div>
+
+                        <div class="real-time-analysis">
+                            <div class="analysis-item">
+                                <span class="analysis-label">Detected Emotion:</span>
+                                <span class="analysis-value" id="cameraEmotion">-</span>
+                            </div>
+                            <div class="analysis-item">
+                                <span class="analysis-label">Confidence:</span>
+                                <div class="confidence-meter">
+                                    <div class="confidence-fill" id="cameraConfidenceMeter"></div>
+                                    <span class="confidence-text">0%</span>
                                 </div>
                             </div>
-                            <div class="emotion-breakdown">
-                                <h4>Emotion Breakdown</h4>
-                                <div class="emotion-bars" id="emotionBars">
-                                    <!-- Emotion bars will be populated by JavaScript -->
-                                </div>
-                            </div>
-                            <div class="action-buttons">
-                                <button id="saveEmotion" class="btn btn-success">
-                                    <i class="fas fa-save"></i>
-                                    Save Emotion
-                                </button>
-                                <button id="newAnalysis" class="btn btn-primary">
-                                    <i class="fas fa-plus"></i>
-                                    New Analysis
-                                </button>
-                                <button id="shareResults" class="btn btn-outline">
-                                    <i class="fas fa-share"></i>
-                                    Share Results
-                                </button>
+                            <div class="analysis-item">
+                                <span class="analysis-label">Face Detected:</span>
+                                <span class="analysis-value" id="faceDetected">No</span>
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Audio Analysis Section -->
+                <div class="input-section" id="audio-section">
+                    <div class="section-content">
+                        <h3>Voice Emotion Analysis</h3>
+                        <p>AI akan menganalisis nada suara, intonasi, dan pola bicara untuk mendeteksi emosi.</p>
+                        
+                        <div class="audio-controls">
+                            <button class="btn btn-primary" id="startAudioBtn">
+                                <i class="fas fa-microphone"></i> Start Voice Analysis
+                            </button>
+                            <button class="btn btn-danger" id="stopAudioBtn" disabled>
+                                <i class="fas fa-stop"></i> Stop Analysis
+                            </button>
+                            <button class="btn btn-secondary" id="recordAudioBtn" disabled>
+                                <i class="fas fa-record-vinyl"></i> Record Audio
+                            </button>
+                        </div>
+
+                        <div class="audio-status">
+                            <span id="audioStatus">Audio analysis not active</span>
+                        </div>
+
+                        <div class="audio-visualization">
+                            <div class="audio-level-meter">
+                                <div class="meter-label">Voice Level</div>
+                                <div class="meter-container">
+                                    <div class="meter-fill" id="audioLevelFill"></div>
+                                    <span class="meter-text" id="audioLevelText">0 dB</span>
+                                </div>
+                            </div>
+                            
+                            <div class="spectrogram-container">
+                                <canvas id="spectrogramCanvas" width="400" height="200"></canvas>
+                                <div class="spectrogram-label">Voice Pattern Analysis</div>
+                            </div>
+                        </div>
+
+                        <div class="real-time-analysis">
+                            <div class="analysis-item">
+                                <span class="analysis-label">Voice Emotion:</span>
+                                <span class="analysis-value" id="audioEmotion">-</span>
+                            </div>
+                            <div class="analysis-item">
+                                <span class="analysis-label">Confidence:</span>
+                                <div class="confidence-meter">
+                                    <div class="confidence-fill" id="audioConfidenceMeter"></div>
+                                    <span class="confidence-text">0%</span>
+                                </div>
+                            </div>
+                            <div class="analysis-item">
+                                <span class="analysis-label">Voice Quality:</span>
+                                <span class="analysis-value" id="voiceQuality">Poor</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Text Analysis Section -->
+                <div class="input-section" id="text-section">
+                    <div class="section-content">
+                        <h3>AI-Powered Text Sentiment Analysis</h3>
+                        <p>AI akan menganalisis konten emosional dari teks yang Anda masukkan.</p>
+                        
+                        <div class="text-input-group">
+                            <label for="textInput">Enter your text for AI analysis:</label>
+                            <textarea id="textInput" placeholder="Type your thoughts, feelings, or any text for AI emotion analysis..."></textarea>
+                        </div>
+
+                        <button class="btn btn-primary" id="analyzeTextBtn">
+                            <i class="fas fa-brain"></i> Analyze with AI
+                        </button>
+
+                        <div class="ai-analysis-results" id="aiAnalysisResults">
+                            <!-- AI analysis results will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Emotion Display -->
+            <div class="current-emotion-display">
+                <h3>AI Detected Emotion</h3>
+                <div class="emotion-display neutral" id="currentEmotion">
+                    No emotion detected
+                </div>
+                <div class="emotion-source">
+                    <span id="emotionSource">-</span>
+                </div>
+                <div class="emotion-actions">
+                    <button class="btn btn-success" id="submitDataBtn" disabled>
+                        <i class="fas fa-save"></i> Submit Data
+                    </button>
+                    <button class="btn btn-info" id="viewDashboardBtn">
+                        <i class="fas fa-chart-bar"></i> View Dashboard
+                    </button>
+                </div>
+                <div class="permanent-storage-info" style="margin-top:8px; font-size:0.95em; color:#27ae60;">
+                    <i class="fas fa-database"></i> Data akan disimpan secara permanen dan tidak hilang walaupun server mati atau browser ditutup.
+                </div>
+                <div class="storage-mode-info" style="margin-top:4px; font-size:0.95em; color:#2980b9;">
+                    <i class="fas fa-server"></i> Mode Penyimpanan: <span id="storageModeStatus">-</span>
+                </div>
+                <div style="margin-top:4px;">
+                    <label for="storageModeSelect" style="font-size:0.95em; color:#34495e;">Pilih Mode Penyimpanan:</label>
+                    <select id="storageModeSelect" style="margin-left:8px; padding:2px 8px; font-size:0.95em;">
+                        <option value="local">Lokal (Browser)</option>
+                        <option value="database">Database (MySQL)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Recent AI Analysis History -->
+            <div class="recent-history">
+                <h3>Recent AI Analysis</h3>
+                <div class="history-container" id="emotionHistory">
+                    <!-- Recent AI analysis entries will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Modal -->
+        <div class="modal" id="exportModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Export AI Analysis Data</h3>
+                    <button class="close-btn" onclick="closeExportModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="export-options">
+                        <div class="option-group">
+                            <label for="exportFormat">Format:</label>
+                            <select id="exportFormat">
+                                <option value="json">JSON</option>
+                                <option value="csv">CSV</option>
+                            </select>
+                        </div>
+                        
+                        <div class="option-group">
+                            <label for="exportStartDate">Start Date:</label>
+                            <input type="date" id="exportStartDate">
+                        </div>
+                        
+                        <div class="option-group">
+                            <label for="exportEndDate">End Date:</label>
+                            <input type="date" id="exportEndDate">
+                        </div>
+                        
+                        <div class="option-group">
+                            <label for="exportEmotion">Filter by Emotion:</label>
+                            <select id="exportEmotion">
+                                <option value="">All Emotions</option>
+                                <option value="happy">Happy</option>
+                                <option value="sad">Sad</option>
+                                <option value="angry">Angry</option>
+                                <option value="excited">Excited</option>
+                                <option value="fearful">Fearful</option>
+                                <option value="surprised">Surprised</option>
+                                <option value="neutral">Neutral</option>
+                                <option value="confused">Confused</option>
+                            </select>
+                        </div>
+                        
+                        <div class="option-group">
+                            <label for="exportSource">Filter by Source:</label>
+                            <select id="exportSource">
+                                <option value="">All Sources</option>
+                                <option value="camera">Camera Analysis</option>
+                                <option value="audio">Voice Analysis</option>
+                                <option value="text">AI Text Analysis</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeExportModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="performExport()">Export</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="js/sidebar.js"></script>
-    <script src="js/dataStorage.js"></script>
-    <script src="js/emotionAnalyzer.js"></script>
-    <script src="js/emotion-input.js"></script>
+    <!-- Load JavaScript Dependencies (urutan penting) -->
+    <script src="js/tf.min.js"></script>
+    <script src="models/face-api.min.js"></script>
+    <script src="js/meyda.min.js"></script>
     
-    <!-- Fallback Script -->
-    <script>
-        // Fallback script to ensure functionality even if main scripts fail
-        window.fallbackActive = false;
-        console.log('🔧 Fallback: Loading fallback script...');
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => {
-                if (!window.emotionInput) {
-                    window.fallbackActive = true;
-                    console.warn('⚠️ Fallback: Main initialization failed, loading fallback...');
-                    initializeFallback();
-                } else {
-                    window.fallbackActive = false;
-                    console.log('✅ Fallback: Main initialization successful');
-                }
-            }, 5000);
-            setupBasicTabNavigation();
-        });
-        
-        function initializeFallback() {
-            console.log('🔧 Fallback: Initializing fallback functionality...');
-            
-            // Show error message
-            const errorMessage = document.getElementById('errorMessage');
-            const errorText = document.getElementById('errorText');
-            if (errorMessage && errorText) {
-                errorText.textContent = 'AI models failed to load. Using fallback mode with simulated analysis.';
-                errorMessage.style.display = 'block';
-            }
-            
-            // Initialize basic functionality
-            initializeBasicCamera();
-            initializeBasicText();
-            initializeBasicResults();
-            
-            console.log('✅ Fallback: Basic functionality initialized');
-        }
-        
-        function setupBasicTabNavigation() {
-            const tabButtons = document.querySelectorAll('.tab-btn');
-            const inputSections = document.querySelectorAll('.input-section');
-            
-            tabButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const tabId = this.getAttribute('data-tab');
-                    
-                    // Remove active class from all buttons and sections
-                    tabButtons.forEach(btn => btn.classList.remove('active'));
-                    inputSections.forEach(section => section.classList.remove('active'));
-                    
-                    // Add active class to clicked button
-                    this.classList.add('active');
-                    
-                    // Show corresponding section
-                    const activeSection = document.getElementById(`${tabId}-section`);
-                    if (activeSection) {
-                        activeSection.classList.add('active');
-                    }
-                });
-            });
-        }
-        
-        function initializeBasicCamera() {
-            const startCamera = document.getElementById('startCamera');
-            const stopCamera = document.getElementById('stopCamera');
-            const captureEmotion = document.getElementById('captureEmotion');
-            const cameraStatus = document.getElementById('cameraStatus');
-            
-            if (startCamera) {
-                startCamera.addEventListener('click', async function() {
-                    try {
-                        updateStatus(cameraStatus, 'Requesting camera access...', 'info');
-                        
-                        const stream = await navigator.mediaDevices.getUserMedia({
-                            video: true,
-                            audio: false
-                        });
-                        
-                        const video = document.getElementById('video');
-                        if (video) {
-                            video.srcObject = stream;
-                        }
-                        
-                        // Update button states
-                        if (startCamera) startCamera.disabled = true;
-                        if (stopCamera) stopCamera.disabled = false;
-                        if (captureEmotion) captureEmotion.disabled = false;
-                        
-                        updateStatus(cameraStatus, 'Camera active. Position your face in the camera view.', 'success');
-                        
-                    } catch (error) {
-                        let msg = 'Cannot access camera: ' + error.message;
-                        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-                            msg = 'Akses kamera ditolak oleh browser. Pastikan Anda sudah mengizinkan akses kamera.';
-                        } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-                            msg = 'Tidak ada kamera yang terdeteksi di perangkat ini.';
-                        } else if (error.name === 'NotReadableError') {
-                            msg = 'Kamera sedang digunakan oleh aplikasi/tab lain. Tutup aplikasi/tab lain yang menggunakan kamera.';
-                        }
-                        updateStatus(cameraStatus, msg, 'error');
-                        // Tampilkan error di #errorMessage
-                        const errorMessage = document.getElementById('errorMessage');
-                        const errorText = document.getElementById('errorText');
-                        if (errorMessage && errorText) {
-                            errorText.textContent = msg;
-                            errorMessage.style.display = 'block';
-                        }
-                    }
-                });
-            }
-            
-            if (stopCamera) {
-                stopCamera.addEventListener('click', function() {
-                    const video = document.getElementById('video');
-                    if (video && video.srcObject) {
-                        video.srcObject.getTracks().forEach(track => track.stop());
-                        video.srcObject = null;
-                    }
-                    
-                    // Update button states
-                    if (startCamera) startCamera.disabled = false;
-                    if (stopCamera) stopCamera.disabled = true;
-                    if (captureEmotion) captureEmotion.disabled = true;
-                    
-                    updateStatus(cameraStatus, 'Camera stopped.', 'info');
-                });
-            }
-            
-            if (captureEmotion) {
-                captureEmotion.addEventListener('click', function() {
-                    updateStatus(cameraStatus, 'Analyzing snapshot...', 'info');
-                    
-                    // Simulate analysis
-                    setTimeout(() => {
-                        const mockEmotions = generateMockEmotions();
-                        updateResults(mockEmotions);
-                        showResults();
-                        updateStatus(cameraStatus, 'Snapshot analyzed successfully!', 'success');
-                    }, 2000);
-                });
-            }
-        }
-        
-        function initializeBasicText() {
-            const analyzeText = document.getElementById('analyzeText');
-            const clearText = document.getElementById('clearText');
-            const emotionText = document.getElementById('emotionText');
-            const recordingStatus = document.getElementById('recordingStatus');
-            
-            if (analyzeText) {
-                analyzeText.addEventListener('click', function() {
-                    const text = emotionText ? emotionText.value.trim() : '';
-                    
-                    if (!text) {
-                        updateStatus(recordingStatus, 'Please enter some text to analyze.', 'error');
-                        return;
-                    }
-                    
-                    updateStatus(recordingStatus, 'Analyzing text...', 'info');
-                    
-                    setTimeout(() => {
-                        const mockEmotions = generateMockEmotions();
-                        updateResults(mockEmotions);
-                        showResults();
-                        updateStatus(recordingStatus, 'Text analysis completed!', 'success');
-                    }, 1500);
-                });
-            }
-            
-            if (clearText) {
-                clearText.addEventListener('click', function() {
-                    if (emotionText) {
-                        emotionText.value = '';
-                    }
-                    updateStatus(recordingStatus, 'Text cleared.', 'info');
-                });
-            }
-        }
-        
-        function initializeBasicResults() {
-            const closeResults = document.getElementById('closeResults');
-            const newAnalysis = document.getElementById('newAnalysis');
-            const saveEmotion = document.getElementById('saveEmotion');
-            const shareResults = document.getElementById('shareResults');
-            
-            if (closeResults) {
-                closeResults.addEventListener('click', function() {
-                    hideResults();
-                });
-            }
-            
-            if (newAnalysis) {
-                newAnalysis.addEventListener('click', function() {
-                    hideResults();
-                    const emotionText = document.getElementById('emotionText');
-                    if (emotionText) {
-                        emotionText.value = '';
-                    }
-                });
-            }
-            
-            if (saveEmotion) {
-                saveEmotion.addEventListener('click', function() {
-                    alert('Emotion saved! (Fallback mode)');
-                });
-            }
-            
-            if (shareResults) {
-                shareResults.addEventListener('click', function() {
-                    alert('Results shared! (Fallback mode)');
-                });
-            }
-        }
-        
-        function generateMockEmotions() {
-            return {
-                happy: Math.random() * 0.8 + 0.2,
-                sad: Math.random() * 0.3,
-                angry: Math.random() * 0.2,
-                fearful: Math.random() * 0.1,
-                pleading: Math.random() * 0.1,
-                surprised: Math.random() * 0.1,
-                disgusted: Math.random() * 0.1,
-                neutral: Math.random() * 0.5
-            };
-        }
-        
-        function updateResults(emotions) {
-            const dominantEmotion = Object.entries(emotions).reduce(
-                (a, b) => a[1] > b[1] ? a : b
-            );
-            
-            const emotionMap = {
-                'happy': { icon: '😊', label: 'Senang' },
-                'sad': { icon: '😢', label: 'Sedih' },
-                'angry': { icon: '😠', label: 'Marah' },
-                'fearful': { icon: '😨', label: 'Takut' },
-                'pleading': { icon: '🥺', label: 'Memohon' },
-                'surprised': { icon: '😲', label: 'Terkejut' },
-                'disgusted': { icon: '🤢', label: 'Jijik' },
-                'neutral': { icon: '😐', label: 'Netral' }
-            };
-            
-            const emotion = emotionMap[dominantEmotion[0]] || emotionMap['neutral'];
-            const confidence = Math.round(dominantEmotion[1] * 100);
-            
-            // Update primary emotion
-            const primaryEmotion = document.getElementById('primaryEmotion');
-            if (primaryEmotion) {
-                primaryEmotion.innerHTML = `
-                    <span class="emotion-icon">${emotion.icon}</span>
-                    <span class="emotion-label">${emotion.label}</span>
-                `;
-            }
-            
-            // Update confidence
-            const confidenceBar = document.getElementById('confidenceBar');
-            const confidenceText = document.getElementById('confidenceText');
-            if (confidenceBar && confidenceText) {
-                confidenceBar.style.width = `${confidence}%`;
-                confidenceText.textContent = `${confidence}%`;
-            }
-            
-            // Update mood score
-            const moodScore = document.getElementById('moodScore');
-            if (moodScore) {
-                const score = Math.round((emotions.happy * 0.4 + emotions.neutral * 0.3 + (1 - emotions.sad - emotions.angry) * 0.3) * 10);
-                moodScore.textContent = `${score}/10`;
-            }
-            
-            // Update stress indicator
-            const stressIndicator = document.getElementById('stressIndicator');
-            if (stressIndicator) {
-                const stressLevel = emotions.angry + emotions.sad;
-                if (stressLevel > 0.7) {
-                    stressIndicator.textContent = 'High';
-                    stressIndicator.className = 'stress-indicator high';
-                } else if (stressLevel > 0.4) {
-                    stressIndicator.textContent = 'Medium';
-                    stressIndicator.className = 'stress-indicator medium';
-                } else {
-                    stressIndicator.textContent = 'Low';
-                    stressIndicator.className = 'stress-indicator low';
-                }
-            }
-            
-            // Update emotion bars
-            const emotionBars = document.getElementById('emotionBars');
-            if (emotionBars) {
-                emotionBars.innerHTML = '';
-                
-                Object.entries(emotions).forEach(([emotion, value]) => {
-                    const percentage = Math.round(value * 100);
-                    const bar = document.createElement('div');
-                    bar.className = 'emotion-bar';
-                    bar.innerHTML = `
-                        <div class="emotion-bar-label">${emotion.charAt(0).toUpperCase() + emotion.slice(1)}</div>
-                        <div class="emotion-bar-container">
-                            <div class="emotion-bar-fill" style="width: ${percentage}%"></div>
-                            <span class="emotion-bar-value">${percentage}%</span>
-                        </div>
-                    `;
-                    emotionBars.appendChild(bar);
-                });
-            }
-            
-            // Reset tombol dan status setelah analisis
-            const startCamera = document.getElementById('startCamera');
-            const stopCamera = document.getElementById('stopCamera');
-            const captureEmotion = document.getElementById('captureEmotion');
-            if (startCamera) startCamera.disabled = false;
-            if (stopCamera) stopCamera.disabled = true;
-            if (captureEmotion) captureEmotion.disabled = true;
-        }
-        
-        function showResults() {
-            const resultsSection = document.getElementById('resultsSection');
-            if (resultsSection) {
-                resultsSection.style.display = 'block';
-            }
-        }
-        
-        function hideResults() {
-            const resultsSection = document.getElementById('resultsSection');
-            if (resultsSection) {
-                resultsSection.style.display = 'none';
-            }
-        }
-        
-        function updateStatus(element, message, type = 'info') {
-            if (element) {
-                element.textContent = message;
-                element.className = element.className.replace(/\b(status-message|recording-status)\b/, '');
-                
-                if (element.id === 'cameraStatus') {
-                    element.className += ' status-message';
-                } else if (element.id === 'recordingStatus') {
-                    element.className += ' recording-status';
-                }
-                
-                if (type === 'error') {
-                    element.style.color = '#e74c3c';
-                } else if (type === 'success') {
-                    element.style.color = '#2ecc71';
-                } else {
-                    element.style.color = '#3498db';
-                }
-            }
-        }
-    </script>
+     <!-- Load Data Storage Dependencies (for permanent saving) -->
+     <script src="js/dataStorage.js"></script>
+     <script src="js/hybridStorage.js"></script>
+     <script src="js/emotion-input.js"></script>
+
+    <!-- Load Core Components Only -->
+    <script src="js/components/DataManager.js"></script>
+    <script src="js/components/UIManager.js"></script>
+    <script src="js/components/CameraManager.js"></script>
+    <script src="js/components/AudioManager.js"></script>
+    <script src="js/components/TextAnalyzer.js"></script>
+    
+    <!-- Load Main Controller -->
+    <script src="js/emotionController.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script src="js/emotion-input-init.js"></script>
 </body>
 </html>
