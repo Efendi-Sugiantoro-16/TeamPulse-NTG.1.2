@@ -10,7 +10,8 @@ const Emotion = sequelize.define('Emotion', {
   },
   userId: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,
+    field: 'user_id',
     references: {
       model: 'users',
       key: 'id',
@@ -23,18 +24,31 @@ const Emotion = sequelize.define('Emotion', {
   score: {
     type: DataTypes.FLOAT,
     allowNull: true,
+    field: 'confidence',
   },
   source: {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  data: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Additional JSON data from emotion analysis'
+  },
+  notes: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Additional notes or comments'
+  },
   createdAt: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
+    field: 'created_at',
   },
 }, {
   tableName: 'emotions',
   timestamps: false,
+  underscored: true
 });
 
 Emotion.belongsTo(User, { foreignKey: 'userId' });

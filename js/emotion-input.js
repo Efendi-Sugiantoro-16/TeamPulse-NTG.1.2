@@ -18,4 +18,11 @@ async function saveEmotionData(entry) {
 }
 
 // Contoh pemakaian:
-// saveEmotionData({ dominantEmotion: 'happy', confidence: 0.9, source: 'camera' });
+// Camera
+// saveEmotionData({ dominantEmotion: 'happy', confidence: 0.9, source: 'camera', notes: 'Detected from camera' });
+// Audio
+// saveEmotionData({ dominantEmotion: 'neutral', confidence: 0.7, source: 'audio', notes: 'Detected from audio' });
+// Text
+// saveEmotionData({ dominantEmotion: 'excited', confidence: 0.95, source: 'text', notes: 'Detected from text' });
+// Snapshot
+// saveEmotionData({ dominantEmotion: 'surprised', confidence: 0.8, source: 'snapshot', notes: 'Detected from snapshot' });

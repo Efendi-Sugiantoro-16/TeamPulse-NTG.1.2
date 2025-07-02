@@ -84,22 +84,42 @@ class DataStorage {
                 version: '1.0'
             };
 
-            // Save to appropriate storage
-            if (this.hybridStorage) {
-                const savedData = await this.hybridStorage.saveEmotionData(enhancedData);
-                console.log('AI emotion data saved via HybridStorage:', savedData);
-                return savedData;
-            } else {
-                // Fallback to simple localStorage
+            // Simpan ke MySQL via API
+            try {
+                await this.saveEmotionDataToMySQL(enhancedData);
+                console.log('AI emotion data saved to MySQL via API');
+            } catch (err) {
+                console.warn('Gagal simpan ke MySQL, fallback ke localStorage:', err);
                 const savedData = await this.saveToLocalStorage(enhancedData);
-                console.log('AI emotion data saved to localStorage:', savedData);
                 return savedData;
             }
-            
+            return enhancedData;
         } catch (error) {
             console.error('Error saving AI emotion data:', error);
             throw error;
         }
+    }
+
+    async saveEmotionDataToMySQL(data) {
+        // Mapping ke struktur backend
+        const payload = {
+            user_id: 1, // Ganti dengan user_id dinamis jika sudah ada sistem login
+            emotion: data.dominantEmotion,
+            confidence: data.confidence,
+            source: data.source,
+            data: JSON.stringify(data), // kirim semua data analisis
+            notes: data.notes || ''
+        };
+        const response = await fetch('/api/emotions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.message || 'Gagal simpan ke MySQL');
+        }
+        return await response.json();
     }
 
     // Alias for saveEmotionData for compatibility
@@ -189,91 +209,33 @@ class DataStorage {
             if (!this.isInitialized) {
                 throw new Error('DataStorage not initialized');
             }
-
-            const {
-                limit = 50,
-                offset = 0,
-                startDate = null,
-                endDate = null,
-                emotion = null,
-                source = null,
-                minConfidence = 0,
-                sortBy = 'timestamp',
-                sortOrder = 'desc'
-            } = options;
-
-            // Use hybrid storage if available
-            if (this.hybridStorage) {
-                const filters = {};
-                
-                if (startDate || endDate) {
-                    filters.timestamp = {};
-                    if (startDate) filters.timestamp.$gte = startDate;
-                    if (endDate) filters.timestamp.$lte = endDate;
-                }
-                
-                if (emotion) {
-                    filters.dominantEmotion = emotion;
-                }
-                
-                if (source) {
-                    filters.source = source;
-                }
-                
-                if (minConfidence > 0) {
-                    filters.confidence = { $gte: minConfidence };
-                }
-
-                const data = await this.hybridStorage.getEmotionData(filters);
-                return data || [];
-            } else {
-                // Fallback to localStorage
-                let data = this.getStoredData();
-                
-                // Apply filters
-                if (startDate) {
-                    data = data.filter(item => new Date(item.timestamp) >= new Date(startDate));
-                }
-                if (endDate) {
-                    data = data.filter(item => new Date(item.timestamp) <= new Date(endDate));
-                }
-                if (emotion) {
-                    data = data.filter(item => item.dominantEmotion === emotion);
-                }
-                if (source) {
-                    data = data.filter(item => item.source === source);
-                }
-                if (minConfidence > 0) {
-                    data = data.filter(item => (item.confidence || 0) >= minConfidence);
-                }
-                
-                // Sort data
-                data.sort((a, b) => {
-                    const aValue = a[sortBy] || '';
-                    const bValue = b[sortBy] || '';
-                    
-                    if (sortOrder === 'desc') {
-                        return bValue > aValue ? 1 : -1;
-                    } else {
-                        return aValue > bValue ? 1 : -1;
-                    }
-                });
-                
-                // Apply limit and offset
-                if (offset > 0) {
-                    data = data.slice(offset);
-                }
-                if (limit > 0) {
-                    data = data.slice(0, limit);
-                }
-                
+            // Coba ambil dari MySQL
+            try {
+                const data = await this.getEmotionDataFromMySQL(options);
                 return data;
+            } catch (err) {
+                console.warn('Gagal ambil dari MySQL, fallback ke localStorage:', err);
+                return this.getStoredData();
             }
-            
         } catch (error) {
-            console.error('Error getting emotion data:', error);
-            return [];
+            console.error('Error getting AI emotion data:', error);
+            throw error;
         }
+    }
+
+    async getEmotionDataFromMySQL(options = {}) {
+        let url = '/api/emotions';
+        if (options.user_id) {
+            url += `?user_id=${options.user_id}`;
+        }
+        const response = await fetch(url);
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.message || 'Gagal ambil data dari MySQL');
+        }
+        const data = await response.json();
+        // Mapping ke format frontend jika perlu
+        return data;
     }
 
     async getEmotionStats(options = {}) {
