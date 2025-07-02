@@ -40,7 +40,7 @@
         <!-- Header -->
         <header class="dashboard-header">
             <div class="header-content">
-                <h1><i class="fas fa-tachometer-alt"></i> Dashboard Emosi</h1>
+                <h1><i class="fas fa-tachometer-alt"></i>Mood Dashboard</h1>
                 <div class="header-actions">
                     <button class="btn btn-primary" onclick="window.location.href='emotion-input.html'">
                         <i class="fas fa-plus"></i> Tambah Emosi
@@ -57,9 +57,16 @@
                             <button class="dropdown-item" data-export="csv">Export sebagai CSV</button>
                         </div>
                     </div>
-                    <button class="btn btn-outline" id="fillDummyDataBtn" title="Tambah data dummy untuk testing">
-                        <i class="fas fa-database"></i> Test Data
+                    <button class="btn btn-outline" id="importDataBtn" title="Import file JSON/CSV">
+                        <i class="fas fa-upload"></i> Import
                     </button>
+                    <!-- <button class="btn btn-outline" id="fillDummyDataBtn" title="Tambah data dummy untuk testing">
+                        <i class="fas fa-database"></i> Test Data
+                    </button> -->
+                    <select id="storageModeSelector" class="btn btn-outline" style="margin-left: 12px; min-width: 120px;">
+                        <option value="local">Local</option>
+                        <option value="database">Database</option>
+                    </select>
                 </div>
             </div>
         </header>
@@ -152,7 +159,7 @@
             <div class="charts-section">
                 <div class="chart-container">
                     <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3><i class="fas fa-chart-bar"></i> Distribusi Emosi (10 Entries Terbaru)</h3>
+                    <h3><i class="fas fa-chart-bar"></i> Distribusi Emosi (10 Entries Terbaru)</h3>
                         <select id="chartTypeSelector" class="chart-type-selector">
                             <option value="bar">Bar Chart</option>
                             <option value="pie">Pie Chart</option>
@@ -195,16 +202,37 @@
                     </div>
                 </div>
 
-                <div class="chart-container">
-                    <h3><i class="fas fa-chart-line"></i> Trend Emosi per Hari</h3>
-                    <div class="chart-wrapper">
-                        <canvas id="emotionTrendChart"></canvas>
+                <!-- Trend Emosi per Hari dan Grafik Total Data dalam satu baris -->
+                <div class="charts-row" style="display: flex; flex-wrap: wrap; gap: 24px;">
+                    <div class="chart-container" style="flex: 1 1 50%; min-width: 320px;">
+                        <div class="chart-header">
+                            <h3><i class="fas fa-chart-line"></i> Trend Emosi per Hari</h3>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="emotionTrendChart" height="120"></canvas>
+                        </div>
+                        <div class="chart-info">
+                            <p class="text-secondary text-center mt-2">
+                                <i class="fas fa-info-circle"></i> Perkembangan emosi dari waktu ke waktu berdasarkan tanggal
+                            </p>
+                        </div>
                     </div>
-                    <div class="chart-info">
-                        <p class="text-secondary text-center mt-2">
-                            <i class="fas fa-info-circle"></i> 
-                            Perkembangan emosi dari waktu ke waktu berdasarkan tanggal
-                        </p>
+                    <div class="chart-container" style="flex: 1 1 50%; min-width: 320px;">
+                        <div class="chart-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3><i class="fas fa-chart-bar"></i> Grafik Total Data</h3>
+                            <select id="totalDataChartTypeSelector" class="chart-type-selector" style="margin-left:10px;">
+                                <option value="line">Line Chart</option>
+                                <option value="bar">Bar Chart</option>
+                            </select>
+                        </div>
+                        <div class="chart-wrapper">
+                            <canvas id="totalDataChart" height="120"></canvas>
+                        </div>
+                        <div class="chart-info">
+                            <p class="text-secondary text-center mt-2">
+                                <i class="fas fa-info-circle"></i> Jumlah total data yang diinput per hari (semua sumber & emosi)
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -281,6 +309,25 @@
         </div>
     </div>
 
+    <!-- Import Data Modal -->
+    <div class="modal" id="importDataModal" style="display:none;">
+        <div class="modal-content" style="max-width:400px;">
+            <div class="modal-header">
+                <h3>Import Data Emosi</h3>
+                <button class="close-btn" onclick="closeImportModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Pilih file <b>JSON</b> atau <b>CSV</b> hasil export TeamPulse.<br>Data akan diimpor ke mode penyimpanan aktif (local/database).</p>
+                <input type="file" id="importFileInput" accept=".json,.csv" style="margin:10px 0;">
+                <div id="importStatus" style="margin-top:10px;font-size:0.95em;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeImportModal()">Batal</button>
+                <button class="btn btn-primary" id="doImportBtn">Import</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="js/dataStorage.js"></script>
     <script src="js/hybridStorage.js"></script>
@@ -291,6 +338,16 @@
     <script src="js/data-services.js"></script>
     <script src="js/sidebar.js"></script>
     <script>
+    // Tambahkan inisialisasi DataManager sebelum dashboard
+    window.dataManager = new DataManager();
+    (async () => {
+        try {
+            await window.dataManager.init();
+        } catch (e) {
+            console.error('Gagal inisialisasi DataManager:', e);
+        }
+    })();
+
     // Data dummy untuk testing
     const dummyData = [
       { id: "1", timestamp: new Date(Date.now() - 3600 * 1000 * 2).toISOString(), dominantEmotion: "happy", confidence: 0.92, userId: "user1", source: "webcam" },
@@ -383,7 +440,109 @@
                 console.log('Could not check for existing data:', error);
             }
         }, 2000);
+
+        const selector = document.getElementById('totalDataChartTypeSelector');
+        if (selector && window.dashboard) {
+            selector.addEventListener('change', function(e) {
+                window.dashboard.totalDataChartType = e.target.value;
+                window.dashboard.renderTotalDataChart();
+            });
+        }
     });
+
+    // Import Data Logic
+    function closeImportModal() {
+        document.getElementById('importDataModal').style.display = 'none';
+        document.getElementById('importFileInput').value = '';
+        document.getElementById('importStatus').textContent = '';
+    }
+    function openImportModal() {
+        document.getElementById('importDataModal').style.display = 'block';
+        // Fokus ke input file saat modal dibuka
+        setTimeout(() => {
+            document.getElementById('importFileInput').focus();
+        }, 200);
+    }
+    document.getElementById('importDataBtn').onclick = openImportModal;
+
+    // Trigger file picker jika user klik tombol Import di modal
+    const importFileInput = document.getElementById('importFileInput');
+    document.getElementById('doImportBtn').onclick = function() {
+        importFileInput.click();
+    };
+
+    // Proses file setelah user memilih file dari perangkat
+    importFileInput.onchange = async function() {
+        const file = this.files && this.files[0];
+        const status = document.getElementById('importStatus');
+        if (!file) {
+            status.textContent = 'Pilih file terlebih dahulu.';
+            status.style.color = '#e74c3c';
+            return;
+        }
+        status.textContent = 'Mengimpor data...';
+        status.style.color = '#2980b9';
+        try {
+            // Validasi ekstensi file
+            const allowed = ['json', 'csv'];
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (!allowed.includes(ext)) {
+                status.textContent = 'Format file tidak didukung. Pilih file .json atau .csv hasil export.';
+                status.style.color = '#e74c3c';
+                return;
+            }
+            // Import data menggunakan DataManager
+            let imported = 0;
+            if (window.dataManager && typeof window.dataManager.importData === 'function') {
+                imported = await window.dataManager.importData(file);
+            } else if (window.hybridStorage && typeof window.hybridStorage.importData === 'function') {
+                imported = await window.hybridStorage.importData(file);
+            } else if (window.dataStorage && typeof window.dataStorage.importData === 'function') {
+                imported = await window.dataStorage.importData(file);
+            } else {
+                throw new Error('Import tidak didukung di mode ini.');
+            }
+            status.textContent = `Berhasil mengimpor ${imported} data emosi!`;
+            status.style.color = '#27ae60';
+            // Refresh dashboard
+            if (window.dashboard && typeof window.dashboard.refreshData === 'function') {
+                await window.dashboard.refreshData();
+            } else {
+                location.reload();
+            }
+        } catch (err) {
+            status.textContent = 'Gagal import: ' + err.message;
+            status.style.color = '#e74c3c';
+        }
+    };
+    // Tutup modal jika klik di luar area
+    window.addEventListener('click', function(e) {
+        const modal = document.getElementById('importDataModal');
+        if (e.target === modal) closeImportModal();
+    });
+
+    // Event listener untuk perubahan mode penyimpanan
+    window.addEventListener('storageModeChanged', function(e) {
+        if (window.dashboard && typeof window.dashboard.refreshData === 'function') {
+            window.dashboard.refreshData();
+        } else {
+            location.reload();
+        }
+    });
+
+    async function startDashboardApp() {
+        if (!window.hybridStorage && typeof HybridStorage !== 'undefined') {
+            window.hybridStorage = new HybridStorage();
+            if (typeof window.hybridStorage.init === 'function') {
+                await window.hybridStorage.init();
+            }
+        } else if (window.hybridStorage && typeof window.hybridStorage.init === 'function') {
+            await window.hybridStorage.init();
+        }
+        // Pastikan dashboard hanya dibuat setelah storage siap
+        window.dashboard = new Dashboard();
+    }
+    startDashboardApp();
     </script>
 </body>
 </html>

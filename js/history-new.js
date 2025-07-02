@@ -249,4 +249,21 @@ function updateTableData(data) {
     renderPagination(data.length, pageSize, currentPage);
 }
 
+// Tambahkan event listener untuk update otomatis setelah import
+if ('BroadcastChannel' in window) {
+    const importChannel = new BroadcastChannel('emotion-data');
+    importChannel.onmessage = (event) => {
+        if (event.data && event.data.type === 'new-emotion') {
+            loadHistoryData();
+            // Optional: tampilkan notifikasi
+            if (window.showNotification) window.showNotification('Data emosi baru berhasil diimpor!', 'success');
+        }
+    };
+}
+
+// Event listener untuk perubahan mode penyimpanan
+window.addEventListener('storageModeChanged', function(e) {
+    loadHistoryData();
+});
+
 })();

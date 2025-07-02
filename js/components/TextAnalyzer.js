@@ -3,6 +3,40 @@
  * Handles text sentiment and emotion analysis
  */
 
+let emotionPipelineEN = null;
+let emotionPipelineID = null;
+let emotionModelLoadedEN = false;
+let emotionModelLoadedID = false;
+
+async function loadEmotionModels() {
+    if (window.transformers) {
+        if (!emotionModelLoadedEN) {
+            emotionPipelineEN = await window.transformers.pipeline('text-classification', 'j-hartmann/emotion-english-distilroberta-base', { quantized: true });
+            emotionModelLoadedEN = true;
+            console.log('AI English Emotion Model loaded!');
+        }
+        if (!emotionModelLoadedID) {
+            emotionPipelineID = await window.transformers.pipeline('text-classification', 'indobenchmark/indobert-base-p1', { quantized: true });
+            emotionModelLoadedID = true;
+            console.log('AI IndoBERT Sentiment Model loaded!');
+        }
+    }
+}
+
+// Panggil loadEmotionModel saat file di-load
+loadEmotionModels();
+
+function detectLang(text) {
+    if (window.franc) {
+        const lang = window.franc(text);
+        if (lang === 'ind') return 'id';
+        if (lang === 'eng') return 'en';
+    }
+    // fallback simple heuristic
+    if (/\b(saya|aku|kamu|tidak|dan|yang|ini|itu|akan|dengan|karena|adalah|untuk|pada|dari|ke)\b/i.test(text)) return 'id';
+    return 'en';
+}
+
 class TextAnalyzer {
     constructor(config = {}) {
         this.config = {
@@ -11,16 +45,6 @@ class TextAnalyzer {
         };
         
         this.eventListeners = new Map();
-        
-        // Simple emotion words for basic analysis
-        this.emotionWords = {
-            happy: ['happy', 'joy', 'excited', 'great', 'wonderful', 'amazing', 'love', 'good', 'positive'],
-            sad: ['sad', 'angry', 'fear', 'hate', 'terrible', 'awful', 'bad', 'negative', 'depressed'],
-            excited: ['excited', 'thrilled', 'ecstatic', 'elated', 'energetic', 'passionate', 'enthusiastic'],
-            fearful: ['afraid', 'scared', 'terrified', 'frightened', 'anxious', 'worried', 'nervous'],
-            angry: ['angry', 'furious', 'mad', 'irritated', 'annoyed', 'frustrated', 'enraged'],
-            neutral: ['neutral', 'calm', 'peaceful', 'serene', 'normal', 'ordinary', 'regular']
-        };
         
         console.log('TextAnalyzer: Initialized');
     }
@@ -33,114 +57,70 @@ class TextAnalyzer {
                 throw new Error('Invalid text input');
             }
             
-            // Clean and normalize text
-            const cleanedText = this.cleanText(text);
-            
-            // Analyze sentiment and emotions
-            const analysis = this.performAnalysis(cleanedText);
-            
-            // Extract keywords
-            const keywords = this.extractKeywords(cleanedText);
-            
-            const result = {
-                emotion: analysis.dominantEmotion,
-                confidence: analysis.confidence,
-                sentiment: analysis.sentiment,
-                keywords: keywords,
-                textLength: text.length,
-                wordCount: cleanedText.split(/\s+/).length,
-                source: 'text',
-                timestamp: new Date().toISOString()
-            };
-            
-            console.log('TextAnalyzer: Analysis complete:', result);
+            const cleanedText = text.trim();
+            const lang = detectLang(cleanedText);
+            let result = null;
+            // ======== AI EMOTION MODEL (transformers.js) ========
+            if (lang === 'id' && emotionModelLoadedID && emotionPipelineID) {
+                const aiResult = await emotionPipelineID(cleanedText, { topk: 1 });
+                if (Array.isArray(aiResult) && aiResult.length > 0) {
+                    const label = aiResult[0].label.toLowerCase();
+                    const score = aiResult[0].score;
+                    result = {
+                        emotion: label,
+                        confidence: score,
+                        sentiment: label, // IndoBERT: label = sentiment
+                        keywords: [],
+                        textLength: text.length,
+                        wordCount: cleanedText.split(/\s+/).length,
+                        source: 'text',
+                        timestamp: new Date().toISOString(),
+                        ai: true,
+                        lang: 'id'
+                    };
+                }
+            } else if (lang === 'en' && emotionModelLoadedEN && emotionPipelineEN) {
+                const aiResult = await emotionPipelineEN(cleanedText, { topk: 1 });
+                if (Array.isArray(aiResult) && aiResult.length > 0) {
+                    const label = aiResult[0].label.toLowerCase();
+                    const score = aiResult[0].score;
+                    result = {
+                        emotion: label,
+                        confidence: score,
+                        sentiment: (['joy', 'happy', 'love', 'surprise', 'excited'].includes(label) ? 'positive' : (['anger', 'sadness', 'fear', 'disgust'].includes(label) ? 'negative' : 'neutral')),
+                        keywords: [],
+                        textLength: text.length,
+                        wordCount: cleanedText.split(/\s+/).length,
+                        source: 'text',
+                        timestamp: new Date().toISOString(),
+                        ai: true,
+                        lang: 'en'
+                    };
+                }
+            }
+            // =====================================================
+            if (!result) {
+                // fallback: netralkan jika model tidak tersedia
+                result = {
+                    emotion: 'neutral',
+                    confidence: 0.5,
+                    sentiment: 'neutral',
+                    keywords: [],
+                    textLength: text.length,
+                    wordCount: cleanedText.split(/\s+/).length,
+                    source: 'text',
+                    timestamp: new Date().toISOString(),
+                    ai: false,
+                    lang
+                };
+            }
             this.emit('analysisComplete', result);
-            
             return result;
-            
         } catch (error) {
             console.error('TextAnalyzer: Analysis failed:', error);
             this.emit('analysisError', error);
             throw error;
         }
-    }
-
-    cleanText(text) {
-        return text
-            .toLowerCase()
-            .replace(/[^\w\s]/g, ' ') // Remove punctuation
-            .replace(/\s+/g, ' ') // Normalize whitespace
-            .trim();
-    }
-
-    performAnalysis(text) {
-        const words = text.split(/\s+/);
-        const emotionScores = {};
-        
-        // Initialize scores
-        Object.keys(this.emotionWords).forEach(emotion => {
-            emotionScores[emotion] = 0;
-        });
-        
-        // Count emotion words
-        words.forEach(word => {
-            Object.entries(this.emotionWords).forEach(([emotion, emotionWords]) => {
-                if (emotionWords.includes(word)) {
-                    emotionScores[emotion]++;
-                }
-            });
-        });
-        
-        // Calculate total emotion words
-        const totalEmotionWords = Object.values(emotionScores).reduce((sum, score) => sum + score, 0);
-        
-        if (totalEmotionWords === 0) {
-            return {
-                dominantEmotion: 'neutral',
-                confidence: 0.5,
-                sentiment: 'neutral'
-            };
-        }
-        
-        // Normalize scores
-        Object.keys(emotionScores).forEach(emotion => {
-            emotionScores[emotion] = emotionScores[emotion] / totalEmotionWords;
-        });
-        
-        // Find dominant emotion
-        const dominantEmotion = Object.entries(emotionScores)
-            .reduce((a, b) => a[1] > b[1] ? a : b)[0];
-        
-        const confidence = emotionScores[dominantEmotion];
-        
-        // Determine sentiment
-        let sentiment = 'neutral';
-        if (['happy', 'excited'].includes(dominantEmotion)) {
-            sentiment = 'positive';
-        } else if (['sad', 'fearful', 'angry'].includes(dominantEmotion)) {
-            sentiment = 'negative';
-        }
-        
-        return {
-            dominantEmotion: dominantEmotion,
-            confidence: confidence,
-            sentiment: sentiment
-        };
-    }
-
-    extractKeywords(text) {
-        const words = text.split(/\s+/);
-        const keywords = [];
-        
-        words.forEach(word => {
-            Object.values(this.emotionWords).flat().forEach(emotionWord => {
-                if (emotionWord === word && !keywords.includes(word)) {
-                    keywords.push(word);
-                }
-            });
-        });
-        
-        return keywords;
     }
 
     // Event system

@@ -61,6 +61,21 @@ class CameraManager {
             
             console.log('CameraManager: Camera started successfully');
             
+            // Setelah video.play() berhasil di fungsi start(), tambahkan event listener agar canvas selalu mengikuti ukuran video
+            if (video) {
+                video.addEventListener('loadedmetadata', () => {
+                    const canvas = document.getElementById('cameraCanvas');
+                    if (canvas) {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        canvas.style.width = video.videoWidth + 'px';
+                        canvas.style.height = video.videoHeight + 'px';
+                        video.style.width = video.videoWidth + 'px';
+                        video.style.height = video.videoHeight + 'px';
+                    }
+                });
+            }
+            
         } catch (error) {
             console.error('CameraManager: Failed to start camera:', error);
             throw error;

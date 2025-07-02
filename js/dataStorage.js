@@ -142,7 +142,30 @@ class DataStorage {
     getStoredData() {
         try {
             const data = localStorage.getItem(this.storageKey);
-            return data ? JSON.parse(data) : [];
+            let arr = data ? JSON.parse(data) : [];
+            // Normalisasi agar field konsisten dengan MySQL
+            arr = arr.map(item => {
+                let confidence = (typeof item.confidence === 'number') ? item.confidence :
+                                 (typeof item.score === 'number') ? item.score : 0;
+                if ((!confidence || confidence === 0) && item.data) {
+                    try {
+                        const parsed = typeof item.data === 'string' ? JSON.parse(item.data) : item.data;
+                        if (parsed && typeof parsed.confidence === 'number') confidence = parsed.confidence;
+                    } catch (e) { /* ignore */ }
+                }
+                let dominantEmotion = item.dominantEmotion || item.emotion || item.emotion_type || '-';
+                if (!dominantEmotion || dominantEmotion === '-') dominantEmotion = item.emotion || '-';
+                let timestamp = item.timestamp || item.createdAt || item.created_at || null;
+                if (!timestamp) timestamp = new Date().toISOString();
+                return {
+                    ...item,
+                    dominantEmotion,
+                    confidence,
+                    timestamp
+                };
+            });
+            console.log('DEBUG: Normalized data from localStorage:', arr);
+            return arr;
         } catch (error) {
             console.error('Error reading from localStorage:', error);
             return [];
@@ -225,8 +248,14 @@ class DataStorage {
 
     async getEmotionDataFromMySQL(options = {}) {
         let url = '/api/emotions';
+        const params = [];
         if (options.user_id) {
-            url += `?user_id=${options.user_id}`;
+            params.push(`user_id=${options.user_id}`);
+        }
+        // Selalu ambil semua data
+        params.push('limit=-1');
+        if (params.length > 0) {
+            url += '?' + params.join('&');
         }
         const response = await fetch(url);
         if (!response.ok) {
@@ -234,8 +263,42 @@ class DataStorage {
             throw new Error(err.message || 'Gagal ambil data dari MySQL');
         }
         const data = await response.json();
-        // Mapping ke format frontend jika perlu
-        return data;
+        // Ambil array data dari response
+        let arr = [];
+        if (data && Array.isArray(data.data)) arr = data.data;
+        else if (Array.isArray(data)) arr = data;
+        else arr = [];
+        // Normalisasi setiap record
+        const normalized = arr.map(item => {
+            let confidence = (typeof item.confidence === 'number') ? item.confidence :
+                             (typeof item.score === 'number') ? item.score : 0;
+            // Fallback: coba parse dari item.data jika ada
+            if ((!confidence || confidence === 0) && item.data) {
+                try {
+                    const parsed = typeof item.data === 'string' ? JSON.parse(item.data) : item.data;
+                    if (parsed && typeof parsed.confidence === 'number') confidence = parsed.confidence;
+                } catch (e) { /* ignore */ }
+            }
+            // Perbaikan: fallback dominantEmotion dan timestamp
+            let dominantEmotion = item.dominantEmotion || item.emotion || item.emotion_type || '-';
+            if (!dominantEmotion || dominantEmotion === '-') dominantEmotion = item.emotion || '-';
+            let timestamp = item.timestamp || item.createdAt || item.created_at || null;
+            if (!timestamp) timestamp = new Date().toISOString();
+            return {
+                id: item.id,
+                dominantEmotion,
+                confidence,
+                source: item.source || '-',
+                timestamp,
+                notes: item.notes || '',
+                userId: item.userId || item.user_id || null,
+                data: item.data || null,
+                createdAt: item.createdAt || item.created_at || null,
+                updatedAt: item.updatedAt || item.updated_at || null
+            };
+        });
+        console.log('DEBUG: Normalized data from MySQL:', normalized);
+        return normalized;
     }
 
     async getEmotionStats(options = {}) {
@@ -593,6 +656,10 @@ class DataStorage {
             }
             
             console.log(`Storage mode set to: ${mode}`);
+            // Trigger custom event agar dashboard/history bisa auto-refresh
+            if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+                window.dispatchEvent(new CustomEvent('storageModeChanged', { detail: { mode } }));
+            }
             return true;
         } catch (error) {
             console.error('Error setting storage mode:', error);
@@ -699,6 +766,91 @@ class DataStorage {
             console.error('Error updating in localStorage:', error);
             throw error;
         }
+    }
+
+    async importFromJSON(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    let json = JSON.parse(e.target.result);
+                    let dataArr = Array.isArray(json) ? json : (json.data || []);
+                    let imported = 0;
+                    for (const item of dataArr) {
+                        // Normalisasi dan validasi
+                        if (!item.dominantEmotion && item.emotion) item.dominantEmotion = item.emotion;
+                        if (!item.source && item.inputType) item.source = item.inputType;
+                        if (!item.timestamp) item.timestamp = new Date().toISOString();
+                        if (!item.id) item.id = this.generateId();
+                        if (!item.dominantEmotion || !item.source) continue;
+                        await this.saveEmotionData(item);
+                        imported++;
+                    }
+                    resolve(imported);
+                } catch (err) {
+                    reject(new Error('File JSON tidak valid atau rusak.'));
+                }
+            };
+            reader.onerror = () => reject(new Error('Gagal membaca file JSON.'));
+            reader.readAsText(file);
+        });
+    }
+
+    async importFromCSV(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const text = e.target.result;
+                    const lines = text.split(/\r?\n/).filter(Boolean);
+                    if (lines.length < 2) throw new Error('CSV tidak berisi data.');
+                    // Robust CSV parse (handle quoted commas)
+                    const parseCSVRow = (row) => {
+                        const result = [];
+                        let current = '', inQuotes = false;
+                        for (let i = 0; i < row.length; i++) {
+                            const char = row[i];
+                            if (char === '"') inQuotes = !inQuotes;
+                            else if (char === ',' && !inQuotes) { result.push(current); current = ''; }
+                            else current += char;
+                        }
+                        result.push(current);
+                        return result.map(cell => cell.replace(/^"|"$/g, ''));
+                    };
+                    const headers = parseCSVRow(lines[0]).map(h => h.trim());
+                    let imported = 0;
+                    for (let i = 1; i < lines.length; i++) {
+                        const row = parseCSVRow(lines[i]);
+                        let obj = {};
+                        headers.forEach((h, idx) => { obj[h] = row[idx]; });
+                        // Normalisasi dan validasi
+                        if (!obj.dominantEmotion && obj.emotion) obj.dominantEmotion = obj.emotion;
+                        if (!obj.source && obj.inputType) obj.source = obj.inputType;
+                        if (!obj.timestamp) obj.timestamp = new Date().toISOString();
+                        if (!obj.id) obj.id = this.generateId();
+                        if (!obj.dominantEmotion || !obj.source) continue;
+                        await this.saveEmotionData(obj);
+                        imported++;
+                    }
+                    resolve(imported);
+                } catch (err) {
+                    reject(new Error('File CSV tidak valid atau rusak.'));
+                }
+            };
+            reader.onerror = () => reject(new Error('Gagal membaca file CSV.'));
+            reader.readAsText(file);
+        });
+    }
+
+    async importData(file, format = null) {
+        if (!format) {
+            if (file.name && file.name.endsWith('.json')) format = 'json';
+            else if (file.name && file.name.endsWith('.csv')) format = 'csv';
+            else throw new Error('Unknown file format');
+        }
+        if (format === 'json') return await this.importFromJSON(file);
+        if (format === 'csv') return await this.importFromCSV(file);
+        throw new Error('Unsupported import format');
     }
 }
 

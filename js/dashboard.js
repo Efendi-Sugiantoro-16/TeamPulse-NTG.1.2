@@ -66,7 +66,7 @@ class Dashboard {
             this.renderRecentSummary();
             
             // Add dummy data button for testing
-            this.addDummyDataButton();
+            // this.addDummyDataButton();
             
             console.log('Dashboard initialization completed successfully');
             
@@ -132,9 +132,6 @@ class Dashboard {
             });
         });
 
-        // Auto refresh every 30 seconds
-        setInterval(() => this.refreshData(), 30000);
-
         // Tambahkan event listener untuk chart type selector
         const chartTypeSelector = document.getElementById('chartTypeSelector');
         if (chartTypeSelector) {
@@ -143,19 +140,38 @@ class Dashboard {
                 this.renderEmotionDistributionChart();
             });
         }
+
+        const storageModeSelector = document.getElementById('storageModeSelector');
+        if (storageModeSelector && window.hybridStorage) {
+            // Set initial value sesuai mode aktif
+            window.hybridStorage.getStorageMode().then(mode => {
+                storageModeSelector.value = mode;
+            });
+            storageModeSelector.addEventListener('change', async function(e) {
+                await window.hybridStorage.setStorageMode(e.target.value);
+                if (window.dashboard && window.dashboard.refreshData) {
+                    window.dashboard.refreshData();
+                } else {
+                    location.reload();
+                }
+            });
+        }
     }
 
     async loadData() {
         this.isLoading = true;
         this.showLoading();
-
         try {
             // Get data from storage
-            this.data = await this.storage.getEmotionData({ limit: 1000 });
-            
+            this.data = await this.storage.getEmotionData({ limit: -1 });
+            // Normalisasi ID agar selalu number jika string angka
+            this.data = this.data.map(item => ({
+                ...item,
+                id: (typeof item.id === 'string' && /^\d+$/.test(item.id)) ? Number(item.id) : item.id
+            }));
+            console.log('Data loaded for dashboard:', this.data);
             // Filter data based on current period
             this.filterDataByPeriod();
-            
         } catch (error) {
             console.error('Failed to load data:', error);
             this.showError('Failed to load data');
@@ -183,13 +199,21 @@ class Dashboard {
                 startDate = new Date(now.getFullYear(), 0, 1);
                 break;
             default:
-                startDate = new Date(0);
+                startDate = null;
         }
 
+        if (!startDate) {
+            this.filteredData = this.data;
+        } else {
         this.filteredData = this.data.filter(item => {
             const itemDate = new Date(item.timestamp);
             return itemDate >= startDate;
         });
+        }
+        // Fallback: jika filter menghasilkan kosong tapi data ada, pakai data penuh
+        if (this.filteredData.length === 0 && this.data.length > 0) {
+            this.filteredData = this.data;
+        }
     }
 
     setPeriod(period) {
@@ -219,6 +243,8 @@ class Dashboard {
         this.renderStorageStatus();
         this.renderRecentSummary();
         this.renderEmotionDistributionChart();
+        this.renderEmotionTrendChart();
+        this.renderTotalDataChart();
         this.showSuccess('Data refreshed successfully');
     }
 
@@ -430,25 +456,49 @@ class Dashboard {
     }
 
     renderCharts() {
+        console.log('DEBUG: filteredData for charts:', this.filteredData);
+        if (this.filteredData && this.filteredData.length > 0) {
         this.renderEmotionDistributionChart();
         this.renderTimeAnalysisChart();
         this.renderConfidenceChart();
         this.renderEmotionTrendChart();
+            this.renderTotalDataChart();
+        } else {
+            // Kosongkan chart jika tidak ada data
+            const chartIds = [
+                'emotionDistributionChart',
+                'timeAnalysisChart',
+                'confidenceChart',
+                'emotionTrendChart',
+                'totalDataChart'
+            ];
+            chartIds.forEach(id => {
+                const ctx = document.getElementById(id);
+                if (ctx && ctx.getContext) {
+                    const chart = ctx.chartInstance;
+                    if (chart && typeof chart.destroy === 'function') chart.destroy();
+                    ctx.getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
+                }
+            });
+        }
     }
 
     renderEmotionDistributionChart() {
         const ctx = document.getElementById('emotionDistributionChart');
         if (!ctx) return;
-
-        // Destroy existing chart
         if (this.charts.emotionDistribution) {
             this.charts.emotionDistribution.destroy();
         }
-
-        // Get recent entries for chart
-        const recentEntries = this.data.slice(0, 10);
+        const recentEntries = this.filteredData.slice(0, 10);
+        console.log('DEBUG: recentEntries for emotion chart:', recentEntries);
         if (recentEntries.length === 0) return;
-
+        // Validasi field penting
+        recentEntries.forEach((item, idx) => {
+            if (!item.dominantEmotion || !item.timestamp) {
+                console.warn('WARNING: Entry missing dominantEmotion/timestamp:', idx, item);
+            }
+        });
+        
         // Count emotions
         const emotionCounts = {};
         recentEntries.forEach(entry => {
@@ -493,30 +543,30 @@ class Dashboard {
             });
         } else {
             // Bar chart: jumlah emosi & rata-rata emosi (%)
-            this.charts.emotionDistribution = new Chart(ctx, {
-                type: 'bar',
-                data: {
+        this.charts.emotionDistribution = new Chart(ctx, {
+            type: 'bar',
+            data: {
                     labels: emotions,
-                    datasets: [
-                        {
+                datasets: [
+                    {
                             label: 'Jumlah Emosi',
-                            data: counts,
+                        data: counts,
                             backgroundColor: bgColors,
                             yAxisID: 'y',
-                        },
-                        {
+                    },
+                    {
                             label: 'Rata-rata Emosi (%)',
                             data: avgEmotions,
                             backgroundColor: 'rgba(59,130,246,0.2)',
                             borderColor: '#3b82f6',
-                            type: 'line',
-                            yAxisID: 'y1',
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
+                        type: 'line',
+                        yAxisID: 'y1',
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
                         legend: { position: 'bottom' },
                         tooltip: {
                             callbacks: {
@@ -529,21 +579,21 @@ class Dashboard {
                                     return context.label;
                                 }
                             }
-                        }
-                    },
-                    scales: {
+                    }
+                },
+                scales: {
                         y: { beginAtZero: true, title: { display: true, text: 'Jumlah' } },
-                        y1: {
+                    y1: {
                             beginAtZero: true,
-                            position: 'right',
+                        position: 'right',
                             title: { display: true, text: 'Rata-rata Emosi (%)' },
                             grid: { drawOnChartArea: false },
-                            min: 0,
+                        min: 0,
                             max: 100
                         }
-                    }
                 }
-            });
+            }
+        });
         }
     }
 
@@ -670,14 +720,11 @@ class Dashboard {
     renderConfidenceChart() {
         const ctx = document.getElementById('confidenceChart');
         if (!ctx) return;
-
-        // Destroy existing chart
         if (this.charts.confidence) {
             this.charts.confidence.destroy();
         }
-
-        // Get recent data
         const recentData = this.filteredData.slice(0, 20);
+        if (recentData.length === 0) return;
         
         // Prepare data for confidence chart
         const labels = recentData.map((item, index) => `Entry ${index + 1}`);
@@ -793,17 +840,15 @@ class Dashboard {
     renderEmotionTrendChart() {
         const ctx = document.getElementById('emotionTrendChart');
         if (!ctx) return;
-
-        // Destroy existing chart
         if (this.charts.emotionTrend) {
             this.charts.emotionTrend.destroy();
         }
-
-        // Get recent data and group by day
-        const recentData = this.filteredData.slice(0, 50);
+        // Gunakan seluruh data (bukan hanya 50 terbaru)
+        const allData = this.filteredData;
+        if (allData.length === 0) return;
+        // Group by tanggal
         const dailyData = {};
-        
-        recentData.forEach(item => {
+        allData.forEach(item => {
             const date = new Date(item.timestamp).toLocaleDateString();
             if (!dailyData[date]) {
                 dailyData[date] = {
@@ -814,10 +859,8 @@ class Dashboard {
             const emotion = item.dominantEmotion || 'unknown';
             dailyData[date][emotion]++;
         });
-
         const dates = Object.keys(dailyData);
         const emotions = ['happy', 'sad', 'angry', 'fear', 'surprise', 'disgust', 'neutral', 'unknown'];
-        
         const datasets = emotions.map(emotion => ({
             label: emotion.charAt(0).toUpperCase() + emotion.slice(1),
             data: dates.map(date => dailyData[date][emotion] || 0),
@@ -826,9 +869,9 @@ class Dashboard {
             borderWidth: 3,
             tension: 0.4,
             pointRadius: 6,
-            pointHoverRadius: 10
+            pointHoverRadius: 10,
+            fill: false
         }));
-
         this.charts.emotionTrend = new Chart(ctx, {
             type: 'line',
             data: {
@@ -841,7 +884,7 @@ class Dashboard {
                 plugins: {
                     title: {
                         display: true,
-                        text: '📈 Trend Emosi per Hari (50 Entries Terbaru)',
+                        text: '📈 Trend Emosi per Hari (Semua Data)',
                         font: {
                             size: 18,
                             weight: 'bold'
@@ -917,6 +960,81 @@ class Dashboard {
         });
     }
 
+    renderTotalDataChart() {
+        const ctx = document.getElementById('totalDataChart');
+        if (!ctx) return;
+        if (this.charts.totalData) {
+            this.charts.totalData.destroy();
+        }
+        const allData = this.filteredData;
+        if (allData.length === 0) return;
+        // Hitung jumlah data untuk setiap emosi
+        const emotions = ['happy', 'sad', 'angry', 'fear', 'surprise', 'disgust', 'neutral', 'unknown'];
+        const emotionCounts = {};
+        emotions.forEach(emotion => { emotionCounts[emotion] = 0; });
+        allData.forEach(item => {
+            const emotion = item.dominantEmotion || 'unknown';
+            if (emotions.includes(emotion)) {
+                emotionCounts[emotion]++;
+            } else {
+                emotionCounts['unknown']++;
+            }
+        });
+        // Filter hanya emosi yang ada datanya
+        const filteredEmotions = emotions.filter(e => emotionCounts[e] > 0);
+        const counts = filteredEmotions.map(e => emotionCounts[e]);
+        const bgColors = filteredEmotions.map(e => this.getEmotionColor(e, 0.7));
+        this.charts.totalData = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: filteredEmotions.map(e => this.capitalizeFirst(e)),
+                datasets: [{
+                    label: 'Total Data per Emosi',
+                    data: counts,
+                    backgroundColor: bgColors,
+                    borderColor: filteredEmotions.map(e => this.getEmotionColor(e)),
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '📊 Grafik Total Data per Emosi',
+                        font: { size: 18, weight: 'bold' },
+                        color: '#1e293b',
+                        padding: 20
+                    },
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#3b82f6',
+                        borderWidth: 2,
+                        cornerRadius: 8
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Emosi', font: { size: 14, weight: 'bold' } },
+                        grid: { color: 'rgba(0, 0, 0, 0.1)', drawBorder: false }
+                    },
+                    y: {
+                        title: { display: true, text: 'Jumlah', font: { size: 14, weight: 'bold' } },
+                        grid: { color: 'rgba(0, 0, 0, 0.1)', drawBorder: false },
+                        ticks: { stepSize: 1, beginAtZero: true }
+                    }
+                },
+                animation: { duration: 2000, easing: 'easeInOutQuart' }
+            }
+        });
+    }
+
     getEmotionColor(emotion, alpha = 1) {
         const colors = {
             'happy': `rgba(16, 185, 129, ${alpha})`,
@@ -949,18 +1067,25 @@ class Dashboard {
     renderRecentEntries() {
         const tbody = document.getElementById('recentEntriesBody');
         if (!tbody) return;
-
-        const recentData = this.filteredData.slice(0, 10);
-        
+        // Filter hanya data database jika mode database
+        const isDatabaseMode = this.storage && this.storage.storageMode === 'database';
+        let recentData = this.filteredData.slice(0, 10);
+        if (isDatabaseMode) {
+            // Hanya tampilkan entry dengan ID number (MySQL)
+            recentData = recentData.filter(item => typeof item.id === 'number' && !isNaN(item.id));
+            console.log('[Dashboard] Recent entries (MySQL only):', recentData.map(e => e.id));
+        }
         if (recentData.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center">Belum ada data tersedia</td></tr>';
             return;
         }
-
-        tbody.innerHTML = recentData.map(item => `
+        tbody.innerHTML = recentData.map(item => {
+            const isValidDbId = isDatabaseMode ? (typeof item.id === 'number' && !isNaN(item.id)) : true;
+            return `
             <tr>
                 <td>${new Date(item.timestamp).toLocaleString()}</td>
                 <td>
+                    <span class="emoji-badge">${getEmotionEmoji(item.dominantEmotion)}</span>
                     <span class="emotion-badge ${item.dominantEmotion}">
                         ${item.dominantEmotion || 'Unknown'}
                     </span>
@@ -976,14 +1101,19 @@ class Dashboard {
                     <button class="btn btn-sm btn-outline" onclick="dashboard.viewEntry('${item.id}')" title="Lihat Detail">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button class="btn btn-sm btn-outline" onclick="dashboard.deleteEntry('${item.id}')" title="Hapus Entry">
+                    ${isValidDbId ? `
+                    <button class="btn btn-sm btn-outline" onclick="dashboard.deleteEntry('${item.id}');console.log('[Dashboard] Hapus ID:', '${item.id}');" title="Hapus Entry">
                         <i class="fas fa-trash"></i>
                     </button>
+                    ` : `
+                    <button class="btn btn-sm btn-outline" disabled title="Tidak bisa dihapus dari database">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    `}
                 </td>
             </tr>
-        `).join('');
-
-        // Update grafik setelah data Recent Entries berubah
+            `;
+        }).join('');
         this.updateEmotionDistributionFromRecent();
     }
 
@@ -995,18 +1125,13 @@ class Dashboard {
     renderActivityFeed() {
         const feed = document.getElementById('activityFeed');
         if (!feed) return;
-
         const activities = this.generateActivityFeed();
         const recentAnalysis = this.generateRecentAnalysis();
-        
         if (activities.length === 0 && recentAnalysis.length === 0) {
             feed.innerHTML = '<div class="activity-item"><div class="activity-text">Belum ada aktivitas terbaru</div></div>';
             return;
         }
-
         let feedHTML = '';
-
-        // Tambahkan analisis recent entries
         if (recentAnalysis.length > 0) {
             feedHTML += '<div class="activity-item analysis-header"><div class="activity-text"><strong>Analisis Recent Entries</strong></div></div>';
             recentAnalysis.forEach(analysis => {
@@ -1023,8 +1148,6 @@ class Dashboard {
                 `;
             });
         }
-
-        // Tambahkan aktivitas biasa
         if (activities.length > 0) {
             feedHTML += '<div class="activity-item analysis-header"><div class="activity-text"><strong>Recent Activities</strong></div></div>';
             activities.forEach(activity => {
@@ -1041,7 +1164,6 @@ class Dashboard {
                 `;
             });
         }
-
         feed.innerHTML = feedHTML;
     }
 
@@ -1137,9 +1259,11 @@ class Dashboard {
     renderStorageStatus() {
         const status = document.getElementById('storageStatus');
         if (!status) return;
-
-        const storageInfo = this.getStorageInfo();
-        
+        let storageInfo = this.getStorageInfo();
+        // Perbaiki jika storageInfo adalah Promise
+        if (typeof storageInfo === 'object' && typeof storageInfo.then === 'function') {
+            storageInfo = { records: this.data.length, storage: this.storage ? this.storage.constructor.name : '-', lastUpdate: 'N/A' };
+        }
         status.innerHTML = `
             <div class="status-item">
                 <span class="status-label">Records:</span>
@@ -1253,58 +1377,38 @@ class Dashboard {
 
         try {
             console.log(`Attempting to delete entry with ID: ${id}`);
-            
-            // Check if storage is available
             if (!this.storage) {
                 throw new Error('Storage system not available');
             }
-
-            // Check if deleteEmotionData method exists
             if (typeof this.storage.deleteEmotionData !== 'function') {
                 throw new Error('Delete method not available in storage system');
             }
-
-            // Debug: Check data before deletion
             const beforeData = await this.storage.getEmotionData({ limit: 1000 });
             const targetEntry = beforeData.find(item => item.id === id);
-            
             if (!targetEntry) {
                 throw new Error('Entry not found or already deleted');
             }
-            
             console.log('Found entry to delete:', targetEntry);
             console.log(`Total entries before deletion: ${beforeData.length}`);
-
-            // Attempt to delete the entry
             const result = await this.storage.deleteEmotionData(id);
-            
             if (result === false) {
                 throw new Error('Delete operation returned false');
             }
-
-            // Debug: Check data after deletion
             const afterData = await this.storage.getEmotionData({ limit: 1000 });
             console.log(`Total entries after deletion: ${afterData.length}`);
-            
             const stillExists = afterData.find(item => item.id === id);
             if (stillExists) {
                 throw new Error('Entry still exists after deletion');
             }
-
             console.log(`Successfully deleted entry with ID: ${id}`);
-            
-            // Refresh the dashboard data
             await this.refreshData();
-            
             this.showSuccess('Entry berhasil dihapus');
         } catch (error) {
             console.error('Delete failed:', error);
-            
-            // Provide more specific error messages
             let errorMessage = 'Gagal menghapus entry';
-            
             if (error.message.includes('not found')) {
-                errorMessage = 'Entry tidak ditemukan atau sudah dihapus';
+                errorMessage = 'Entry tidak ditemukan atau sudah dihapus. Data akan di-refresh.';
+                await this.refreshData();
             } else if (error.message.includes('not available')) {
                 errorMessage = 'Sistem penyimpanan tidak tersedia';
             } else if (error.message.includes('Delete method')) {
@@ -1313,55 +1417,11 @@ class Dashboard {
                 errorMessage = 'Operasi hapus gagal';
             } else if (error.message.includes('still exists')) {
                 errorMessage = 'Entry masih ada setelah operasi hapus';
+                await this.refreshData();
+            } else {
+                await this.refreshData();
             }
-            
             this.showError(errorMessage);
-        }
-    }
-
-    addDummyDataButton() {
-        const headerActions = document.querySelector('.header-actions');
-        if (!headerActions) return;
-
-        const dummyBtn = document.createElement('button');
-        dummyBtn.className = 'btn btn-outline';
-        dummyBtn.innerHTML = '<i class="fas fa-database"></i> Add Dummy Data';
-        dummyBtn.onclick = () => this.insertDummyData();
-        
-        headerActions.appendChild(dummyBtn);
-    }
-
-    async insertDummyData() {
-        const dummyData = [
-            { id: "1", timestamp: new Date(Date.now() - 3600 * 1000 * 2).toISOString(), dominantEmotion: "happy", confidence: 0.92, userId: "user1", source: "webcam" },
-            { id: "2", timestamp: new Date(Date.now() - 3600 * 1000 * 5).toISOString(), dominantEmotion: "sad", confidence: 0.81, userId: "user2", source: "microphone" },
-            { id: "3", timestamp: new Date(Date.now() - 3600 * 1000 * 8).toISOString(), dominantEmotion: "angry", confidence: 0.77, userId: "user3", source: "webcam" },
-            { id: "4", timestamp: new Date(Date.now() - 3600 * 1000 * 12).toISOString(), dominantEmotion: "neutral", confidence: 0.65, userId: "user1", source: "webcam" },
-            { id: "5", timestamp: new Date(Date.now() - 3600 * 1000 * 15).toISOString(), dominantEmotion: "happy", confidence: 0.88, userId: "user2", source: "microphone" },
-            { id: "6", timestamp: new Date(Date.now() - 3600 * 1000 * 20).toISOString(), dominantEmotion: "surprise", confidence: 0.73, userId: "user3", source: "webcam" },
-            { id: "7", timestamp: new Date(Date.now() - 3600 * 1000 * 22).toISOString(), dominantEmotion: "fear", confidence: 0.69, userId: "user1", source: "microphone" }
-        ];
-
-        try {
-            console.log('Inserting dummy data...');
-            
-            // Check if storage has the required method
-            const saveMethod = this.storage.addEmotionData || this.storage.saveEmotionData;
-            if (!saveMethod) {
-                throw new Error('No save method available in storage');
-            }
-
-            for (const entry of dummyData) {
-                console.log(`Inserting entry: ${entry.id}`);
-                await saveMethod.call(this.storage, entry);
-            }
-            
-            console.log('Dummy data inserted successfully');
-            await this.refreshData();
-            this.showSuccess('Data dummy berhasil ditambahkan!');
-        } catch (error) {
-            console.error('Failed to insert dummy data:', error);
-            this.showError('Gagal menambahkan data dummy: ' + error.message);
         }
     }
 
@@ -1405,10 +1465,22 @@ class Dashboard {
     }
 }
 
-// Initialize dashboard when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.dashboard = new Dashboard();
-});
-
 // Export for global access
 window.Dashboard = Dashboard;
+
+function getEmotionEmoji(emotion) {
+    if (!emotion) return '❓';
+    const e = emotion.toLowerCase();
+    if (["happy", "joy"].includes(e)) return "😊";
+    if (["sad"].includes(e)) return "😢";
+    if (["angry", "anger"].includes(e)) return "😠";
+    if (["neutral"].includes(e)) return "😐";
+    if (["surprised", "surprise"].includes(e)) return "😲";
+    if (["fearful", "fear"].includes(e)) return "😨";
+    if (["confused", "confusion"].includes(e)) return "😕";
+    if (["excited", "excitement"].includes(e)) return "😄";
+    if (["disgusted", "disgust"].includes(e)) return "😒";
+    if (["contempt", "contemptuous"].includes(e)) return "😒";
+    if (["contemptuous", "contempt"].includes(e)) return "😒";
+    return "❓";
+}

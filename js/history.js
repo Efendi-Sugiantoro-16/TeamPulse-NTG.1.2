@@ -339,7 +339,7 @@ function updateTableData(data) {
     if (!data || data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" class="text-center">No history data available.</td></tr>';
         return;
-    }
+}
     // Pastikan data diurutkan terbaru di atas
     data.sort((a, b) => new Date(b.timestamp || b.createdAt || b.date || 0) - new Date(a.timestamp || a.createdAt || a.date || 0));
     data.forEach((entry, idx) => {

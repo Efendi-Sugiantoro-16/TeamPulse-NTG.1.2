@@ -92,11 +92,18 @@ exports.getEmotions = async (req, res) => {
       if (end_date) whereClause.createdAt[Op.lte] = new Date(end_date);
     }
 
+    // Perbaiki limit: jika limit=-1 atau tidak ada, tampilkan semua data
+    let queryLimit = undefined;
+    if (typeof limit !== 'undefined' && limit !== null && limit !== '' && Number(limit) !== -1) {
+      queryLimit = parseInt(limit);
+      if (isNaN(queryLimit) || queryLimit <= 0) queryLimit = 100;
+    }
+
     const emotions = await Emotion.findAll({
       where: whereClause,
       order: [['createdAt', 'DESC']],
-      limit: parseInt(limit),
-      offset: parseInt(offset)
+      ...(queryLimit ? { limit: queryLimit } : {}),
+      offset: parseInt(offset) || 0
     });
 
     console.log(`✅ Retrieved ${emotions.length} emotions from database`);

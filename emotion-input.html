@@ -14,6 +14,8 @@
     <!-- Menggunakan face-api.js lokal -->
     <script src="models/face-api.min.js"></script>
     <script src="js/meyda.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.5.0/dist/transformers.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/franc-min@6.1.0/build/franc-min.min.js"></script>
 </head>
 <body>
     <!-- Sidebar -->
@@ -262,42 +264,44 @@
             </div>
 
             <!-- Current Emotion Display -->
-            <div class="current-emotion-display">
-                <h3>AI Detected Emotion</h3>
-                <div class="emotion-display neutral" id="currentEmotion">
-                    No emotion detected
+            <div class="card-grid">
+                <div class="current-emotion-display">
+                    <h3>AI Detected Emotion</h3>
+                    <div class="emotion-display neutral" id="currentEmotion">
+                        No emotion detected
+                    </div>
+                    <div class="emotion-source">
+                        <span id="emotionSource">-</span>
+                    </div>
+                    <div class="emotion-actions">
+                        <button class="btn btn-success" id="submitDataBtn" disabled>
+                            <i class="fas fa-save"></i> Submit Data
+                        </button>
+                        <button class="btn btn-info" id="viewDashboardBtn">
+                            <i class="fas fa-chart-bar"></i> View Dashboard
+                        </button>
+                    </div>
+                    <div class="permanent-storage-info" style="margin-top:8px; font-size:0.95em; color:#27ae60;">
+                        <i class="fas fa-database"></i> Data akan disimpan secara permanen dan tidak hilang walaupun server mati atau browser ditutup.
+                    </div>
+                    <div class="storage-mode-info" style="margin-top:4px; font-size:0.95em; color:#2980b9;">
+                        <i class="fas fa-server"></i> Mode Penyimpanan: <span id="storageModeStatus">-</span>
+                    </div>
+                    <div style="margin-top:4px;">
+                        <label for="storageModeSelect" style="font-size:0.95em; color:#34495e;">Pilih Mode Penyimpanan:</label>
+                        <select id="storageModeSelect" style="margin-left:8px; padding:2px 8px; font-size:0.95em;">
+                            <option value="local">Lokal (Browser)</option>
+                            <option value="database">Database (MySQL)</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="emotion-source">
-                    <span id="emotionSource">-</span>
-                </div>
-                <div class="emotion-actions">
-                    <button class="btn btn-success" id="submitDataBtn" disabled>
-                        <i class="fas fa-save"></i> Submit Data
-                    </button>
-                    <button class="btn btn-info" id="viewDashboardBtn">
-                        <i class="fas fa-chart-bar"></i> View Dashboard
-                    </button>
-                </div>
-                <div class="permanent-storage-info" style="margin-top:8px; font-size:0.95em; color:#27ae60;">
-                    <i class="fas fa-database"></i> Data akan disimpan secara permanen dan tidak hilang walaupun server mati atau browser ditutup.
-                </div>
-                <div class="storage-mode-info" style="margin-top:4px; font-size:0.95em; color:#2980b9;">
-                    <i class="fas fa-server"></i> Mode Penyimpanan: <span id="storageModeStatus">-</span>
-                </div>
-                <div style="margin-top:4px;">
-                    <label for="storageModeSelect" style="font-size:0.95em; color:#34495e;">Pilih Mode Penyimpanan:</label>
-                    <select id="storageModeSelect" style="margin-left:8px; padding:2px 8px; font-size:0.95em;">
-                        <option value="local">Lokal (Browser)</option>
-                        <option value="database">Database (MySQL)</option>
-                    </select>
-                </div>
-            </div>
 
-            <!-- Recent AI Analysis History -->
-            <div class="recent-history">
-                <h3>Recent AI Analysis</h3>
-                <div class="history-container" id="emotionHistory">
-                    <!-- Recent AI analysis entries will be populated here -->
+                <!-- Recent AI Analysis History -->
+                <div class="recent-history">
+                    <h3>Recent AI Analysis</h3>
+                    <div class="history-container" id="emotionHistory">
+                        <!-- Recent AI analysis entries will be populated here -->
+                    </div>
                 </div>
             </div>
         </div>

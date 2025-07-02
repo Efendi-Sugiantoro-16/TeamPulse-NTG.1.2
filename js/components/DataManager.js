@@ -108,6 +108,26 @@ class DataManager {
         };
     }
 
+    async importData(file, format = null) {
+        if (!this.isInitialized) throw new Error('DataManager not initialized');
+        if (!file) throw new Error('No file provided');
+        // Detect format if not provided
+        if (!format) {
+            if (file.name && file.name.endsWith('.json')) format = 'json';
+            else if (file.name && file.name.endsWith('.csv')) format = 'csv';
+            else throw new Error('Unknown file format');
+        }
+        if (this.storage && this.storage.importData) {
+            return await this.storage.importData(file, format);
+        } else if (format === 'json' && this.storage.importFromJSON) {
+            return await this.storage.importFromJSON(file);
+        } else if (format === 'csv' && this.storage.importFromCSV) {
+            return await this.storage.importFromCSV(file);
+        } else {
+            throw new Error('Import not supported for this storage');
+        }
+    }
+
     destroy() {
         this.storage = null;
         this.isInitialized = false;

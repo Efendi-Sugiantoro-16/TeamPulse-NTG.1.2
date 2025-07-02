@@ -1,0 +1,92 @@
+digraph TeamPulseWorkflow {
+  rankdir=TB;
+  node [shape=box, style=filled, fillcolor="#f9f9f9", fontname="Arial", fontsize=10];
+  edge [fontname="Arial", fontsize=9];
+
+  // Layer 1: User Interface (Frontend)
+  subgraph cluster_ui {
+    label="User Interface (Frontend)";
+    style=filled;
+    color=lightblue;
+    "User\n(Browser)" [shape=ellipse, fillcolor="#e3f2fd"];
+    "emotion-input.html";
+    "dashboard.html";
+    "history.html";
+    "login.html";
+    "settings.html";
+    "JS Frontend\n(emotion-input.js,\ndashboard.js, etc.)";
+  }
+
+  // Layer 2: AI & Data Processing (Frontend)
+  subgraph cluster_ai {
+    label="AI & Data Processing (Frontend)";
+    style=filled;
+    color=lightyellow;
+    "emotionAnalyzer.js\n(face, audio, text)";
+    "HybridStorage.js";
+    "DataStorage.js";
+  }
+
+  // Layer 3: API (Backend)
+  subgraph cluster_api {
+    label="API (Backend)";
+    style=filled;
+    color=lightgreen;
+    "Express.js Server\n(app.js)";
+    "API Routes\n(/api/emotions, /api/auth)";
+    "emotionController.js";
+    "authController.js";
+    "Middleware\n(auth.js)";
+  }
+
+  // Layer 4: Data Storage
+  subgraph cluster_db {
+    label="Data Storage";
+    style=filled;
+    color=lightgrey;
+    "MySQL Database";
+    "Sequelize Models\n(emotion.js, user.js)";
+    "LocalStorage\n(offline)";
+  }
+
+  // UI Layer
+  "User\n(Browser)" -> "emotion-input.html" [label="Input Emosi"];
+  "User\n(Browser)" -> "dashboard.html" [label="Lihat Dashboard"];
+  "User\n(Browser)" -> "history.html" [label="Lihat Riwayat"];
+  "User\n(Browser)" -> "login.html" [label="Login"];
+  "User\n(Browser)" -> "settings.html" [label="Pengaturan"];
+  "emotion-input.html" -> "JS Frontend\n(emotion-input.js,\ndashboard.js, etc.)";
+  "dashboard.html" -> "JS Frontend\n(emotion-input.js,\ndashboard.js, etc.)";
+  "history.html" -> "JS Frontend\n(emotion-input.js,\ndashboard.js, etc.)";
+  "login.html" -> "JS Frontend\n(emotion-input.js,\ndashboard.js, etc.)";
+  "settings.html" -> "JS Frontend\n(emotion-input.js,\ndashboard.js, etc.)";
+
+  // AI & Data Processing Layer
+  "JS Frontend\n(emotion-input.js,\ndashboard.js, etc.)" -> "emotionAnalyzer.js\n(face, audio, text)" [label="Analisis Emosi"];
+  "JS Frontend\n(emotion-input.js,\ndashboard.js, etc.)" -> "HybridStorage.js" [label="Simpan/Ambil Data"];
+  "HybridStorage.js" -> "DataStorage.js" [label="Fallback"];
+  "emotionAnalyzer.js\n(face, audio, text)" -> "HybridStorage.js" [label="Hasil Analisis"];
+
+  // Hybrid Storage ke Backend/API
+  "HybridStorage.js" -> "Express.js Server\n(app.js)" [label="API Request\n(fetch/POST/GET)", style=dashed];
+  "DataStorage.js" -> "Express.js Server\n(app.js)" [label="API Request", style=dashed];
+
+  // API Layer
+  "Express.js Server\n(app.js)" -> "API Routes\n(/api/emotions, /api/auth)";
+  "API Routes\n(/api/emotions, /api/auth)" -> "emotionController.js" [label="Emosi"];
+  "API Routes\n(/api/emotions, /api/auth)" -> "authController.js" [label="Auth"];
+  "API Routes\n(/api/emotions, /api/auth)" -> "Middleware\n(auth.js)" [label="Validasi/JWT"];
+
+  // Data Storage Layer
+  "emotionController.js" -> "Sequelize Models\n(emotion.js, user.js)";
+  "authController.js" -> "Sequelize Models\n(emotion.js, user.js)";
+  "Sequelize Models\n(emotion.js, user.js)" -> "MySQL Database";
+  "HybridStorage.js" -> "LocalStorage\n(offline)" [label="Offline Mode"];
+  "DataStorage.js" -> "LocalStorage\n(offline)" [label="Offline Mode"];
+
+  // Data retrieval for dashboard/history
+  "Express.js Server\n(app.js)" -> "HybridStorage.js" [label="API Response", style=dashed];
+  "Express.js Server\n(app.js)" -> "DataStorage.js" [label="API Response", style=dashed];
+  "HybridStorage.js" -> "JS Frontend\n(emotion-input.js,\ndashboard.js, etc.)" [label="Data Emosi"];
+  "DataStorage.js" -> "JS Frontend\n(emotion-input.js,\ndashboard.js, etc.)" [label="Data Emosi"];
+}

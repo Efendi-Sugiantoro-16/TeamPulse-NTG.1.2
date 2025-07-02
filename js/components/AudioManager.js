@@ -23,6 +23,8 @@ class AudioManager {
         this.analysisInterval = null;
         this.eventListeners = new Map();
         
+        this.lastAudioEmotionResult = { emotion: 'neutral', confidence: 0.5, features: {} };
+        
         console.log('AudioManager: Initialized');
     }
 
@@ -102,57 +104,55 @@ class AudioManager {
             console.error('AudioManager: Analyzer not initialized');
             return;
         }
-        
         console.log('AudioManager: Starting voice analysis...');
-        
         this.isAnalyzing = true;
-        const bufferLength = this.analyzer.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        
+        const bufferLength = 1024;
+        if (window.analyzeAudioEmotionIntonation && this.audioContext && this.microphone && !this._scriptNode) {
+            this._scriptNode = this.audioContext.createScriptProcessor(bufferLength, 1, 1);
+            this.microphone.connect(this._scriptNode);
+            this._scriptNode.onaudioprocess = (audioProcessingEvent) => {
+                const inputBuffer = audioProcessingEvent.inputBuffer.getChannelData(0);
+                this.lastAudioEmotionResult = window.analyzeAudioEmotionIntonation(inputBuffer, this.audioContext.sampleRate);
+            };
+        }
+        const bufferLen = this.analyzer.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLen);
         const analyzeVoice = () => {
             if (!this.isAnalyzing) return;
-            
             try {
-                // Get frequency data
                 this.analyzer.getByteFrequencyData(dataArray);
-                
-                // Calculate audio level
                 const audioLevel = this.calculateAudioLevel(dataArray);
-                
-                // Analyze voice emotion
                 const emotion = this.analyzeVoiceEmotion(dataArray);
-                
-                // Update spectrogram
                 this.updateSpectrogram(dataArray);
-                
                 const analysisData = {
                     emotion: emotion.emotion,
                     dominantEmotion: emotion.emotion,
                     confidence: emotion.confidence,
                     audioLevel: audioLevel,
                     voiceQuality: emotion.voiceQuality,
+                    features: emotion.features,
                     source: 'audio',
                     timestamp: new Date().toISOString()
                 };
-                
                 this.emit('emotionDetected', analysisData);
                 this.emit('audioLevel', audioLevel);
-                
             } catch (error) {
                 console.error('AudioManager: Voice analysis error:', error);
                 this.emit('analysisError', error);
             }
         };
-        
         this.analysisInterval = setInterval(analyzeVoice, this.config.audioAnalysisInterval);
     }
 
     stopAnalysis() {
         this.isAnalyzing = false;
-        
         if (this.analysisInterval) {
             clearInterval(this.analysisInterval);
             this.analysisInterval = null;
+        }
+        if (this._scriptNode) {
+            this._scriptNode.disconnect();
+            this._scriptNode = null;
         }
     }
 
@@ -164,21 +164,18 @@ class AudioManager {
     }
 
     analyzeVoiceEmotion(dataArray) {
-        // Simple voice emotion analysis based on frequency patterns
-        // In a real implementation, this would use more sophisticated algorithms
-        
+        if (window.analyzeAudioEmotionIntonation && this.audioContext && this.microphone) {
+            return this.lastAudioEmotionResult;
+        }
+        // Fallback lama (tanpa random)
         const lowFreq = dataArray.slice(0, Math.floor(dataArray.length * 0.3));
         const midFreq = dataArray.slice(Math.floor(dataArray.length * 0.3), Math.floor(dataArray.length * 0.7));
         const highFreq = dataArray.slice(Math.floor(dataArray.length * 0.7));
-        
         const lowAvg = lowFreq.reduce((sum, val) => sum + val, 0) / lowFreq.length;
         const midAvg = midFreq.reduce((sum, val) => sum + val, 0) / midFreq.length;
         const highAvg = highFreq.reduce((sum, val) => sum + val, 0) / highFreq.length;
-        
-        // Simple emotion mapping based on frequency distribution
         let emotion = 'neutral';
         let confidence = 0.5;
-        
         if (highAvg > midAvg && highAvg > lowAvg) {
             emotion = 'excited';
             confidence = 0.7;
@@ -189,22 +186,8 @@ class AudioManager {
             emotion = 'happy';
             confidence = 0.65;
         }
-        
-        // Add some randomness for simulation
-        const emotions = ['happy', 'sad', 'angry', 'excited', 'fearful', 'surprised', 'neutral', 'confused'];
-        if (Math.random() < 0.3) {
-            emotion = emotions[Math.floor(Math.random() * emotions.length)];
-            confidence = 0.4 + Math.random() * 0.4;
-        }
-        
-        const voiceQuality = confidence > 0.7 ? 'Good' : 
-                           confidence > 0.4 ? 'Fair' : 'Poor';
-        
-        return {
-            emotion: emotion,
-            confidence: confidence,
-            voiceQuality: voiceQuality
-        };
+        const voiceQuality = confidence > 0.7 ? 'Good' : 'Fair';
+        return { emotion, confidence, voiceQuality };
     }
 
     updateSpectrogram(dataArray) {

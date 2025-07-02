@@ -1,0 +1,72 @@
+[PANDUAN USER MANUAL TEAM PULSE-NTG.1.2]
+
+Judul: Panduan Pengguna TeamPulse-NTG.1.2
+
+1. Apa itu TeamPulse?
+TeamPulse adalah platform kecerdasan emosional tim yang memanfaatkan AI untuk mendeteksi emosi melalui analisis wajah dan suara, serta menyediakan analitik real-time untuk meningkatkan kesejahteraan emosional tim Anda.
+
+2. Fitur Utama
+- Deteksi Emosi Real-Time: Analisis ekspresi wajah & suara untuk mendeteksi 7 emosi dasar (Senang, Sedih, Marah, Takut, Terkejut, Jijik, Netral).
+- Dashboard Analitik: Statistik mood tim, grafik tren emosi, insight AI, dan notifikasi dini jika ada pola emosi yang mengkhawatirkan.
+- Riwayat & Laporan: Lihat riwayat emosi dan hasil analisis tim.
+- Keamanan & Privasi: Data dienkripsi, autentikasi JWT, dan kontrol privasi pengguna.
+
+3. Cara Menggunakan TeamPulse
+3.1 Membuat Akun
+- Buka aplikasi TeamPulse di browser.
+- Klik Sign Up.
+- Isi formulir: Username, Email, Password, Nama Lengkap.
+- (Jika diperlukan) Verifikasi email Anda.
+- Login menggunakan username & password.
+
+3.2 Dashboard
+- Setelah login, Anda akan masuk ke dashboard utama.
+- Navigasi sidebar: Dashboard, Emotion Input, History, Feedback, Settings.
+- Lihat statistik mood tim, grafik emosi, insight, dan aktivitas terbaru.
+
+3.3 Merekam Emosi
+A. Analisis Wajah
+- Pilih menu Emotion Input.
+- Izinkan akses kamera.
+- Hadapkan wajah ke kamera, pastikan pencahayaan cukup.
+- Klik Start Recording, ekspresikan emosi Anda selama 3-5 detik, lalu klik Stop Recording.
+- Cek hasil deteksi, tambahkan catatan jika perlu, lalu simpan.
+
+B. Analisis Suara
+- Pilih tab Audio Analysis.
+- Izinkan akses mikrofon.
+- Klik Start Recording, bicara atau keluarkan suara selama 5-10 detik, lalu klik Stop Recording.
+- Cek hasil deteksi, tambahkan catatan jika perlu, lalu simpan.
+
+C. Input Manual
+- Pilih tab Manual Input.
+- Pilih emosi dari daftar, atur intensitas, dan tambahkan catatan jika perlu.
+
+3.4 Melihat Riwayat
+- Masuk ke menu History untuk melihat catatan emosi sebelumnya.
+
+3.5 Analitik Tim
+- Dashboard menampilkan grafik tren emosi, insight AI, dan notifikasi jika ada pola yang perlu diperhatikan.
+
+3.6 Pengaturan & Privasi
+- Atur preferensi akun dan privasi di menu Settings.
+- Data Anda aman dan hanya dapat diakses sesuai izin yang Anda berikan.
+
+4. Tips Penggunaan
+- Gunakan browser modern (Chrome, Firefox, Edge, Safari terbaru).
+- Pastikan kamera & mikrofon berfungsi.
+- Gunakan pencahayaan yang baik untuk deteksi wajah.
+- Jaga privasi dengan logout setelah selesai.
+
+5. Troubleshooting
+- Jika deteksi gagal, cek izin kamera/mikrofon di browser.
+- Pastikan koneksi internet stabil.
+- Hubungi admin jika ada masalah teknis.
+
+6. Keamanan
+- Data emosi dienkripsi.
+- Autentikasi menggunakan JWT.
+- Anda dapat mengatur siapa yang bisa melihat data Anda.
+
+Catatan:
+Untuk instalasi dan setup server, silakan ikuti petunjuk di README.md bagian Installation dan Configuration. 
