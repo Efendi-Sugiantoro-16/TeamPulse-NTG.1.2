@@ -46,6 +46,11 @@ class CameraManager {
                 } catch (err) {
                     console.warn('CameraManager: video.play() failed:', err);
                 }
+                // Sinkronisasi canvas setelah video.play()
+                this.syncCanvasToVideo();
+                video.addEventListener('loadedmetadata', () => {
+                    this.syncCanvasToVideo();
+                });
             }
             
             // Initialize face detection
@@ -61,24 +66,22 @@ class CameraManager {
             
             console.log('CameraManager: Camera started successfully');
             
-            // Setelah video.play() berhasil di fungsi start(), tambahkan event listener agar canvas selalu mengikuti ukuran video
-            if (video) {
-                video.addEventListener('loadedmetadata', () => {
-                    const canvas = document.getElementById('cameraCanvas');
-                    if (canvas) {
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        canvas.style.width = video.videoWidth + 'px';
-                        canvas.style.height = video.videoHeight + 'px';
-                        video.style.width = video.videoWidth + 'px';
-                        video.style.height = video.videoHeight + 'px';
-                    }
-                });
-            }
-            
         } catch (error) {
             console.error('CameraManager: Failed to start camera:', error);
             throw error;
+        }
+    }
+
+    syncCanvasToVideo() {
+        const video = document.getElementById('cameraVideo');
+        const canvas = document.getElementById('cameraCanvas');
+        if (video && canvas) {
+            // Set attribute (pixel size)
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            // Set style (display size)
+            canvas.style.width = video.style.width = video.videoWidth + 'px';
+            canvas.style.height = video.style.height = video.videoHeight + 'px';
         }
     }
 
