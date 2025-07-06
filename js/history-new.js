@@ -3,11 +3,82 @@
 (function() {
 // history-new.js - versi sederhana dan robust
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadHistoryData();
+document.addEventListener('DOMContentLoaded', async function() {
+    // Auto-detect database availability and set storage mode
+    if (window.hybridStorage && typeof window.hybridStorage.checkDatabaseAvailability === 'function') {
+        try {
+            const dbAvailable = await window.hybridStorage.checkDatabaseAvailability();
+            if (dbAvailable) {
+                await window.hybridStorage.setStorageMode('database');
+                if (document.getElementById('storageModeSelect')) {
+                    document.getElementById('storageModeSelect').value = 'database';
+                }
+            } else {
+                await window.hybridStorage.setStorageMode('local');
+                if (document.getElementById('storageModeSelect')) {
+                    document.getElementById('storageModeSelect').value = 'local';
+                }
+                console.log('[HISTORY] Database not available, fallback to local storage.');
+            }
+        } catch (e) {
+            await window.hybridStorage.setStorageMode('local');
+            if (document.getElementById('storageModeSelect')) {
+                document.getElementById('storageModeSelect').value = 'local';
+            }
+            console.log('[HISTORY] Error checking database, fallback to local:', e);
+        }
+    }
+    await loadHistoryData();
     // Refresh button
     const refreshBtn = document.getElementById('refreshTable');
     if (refreshBtn) refreshBtn.addEventListener('click', loadHistoryData);
+    // Storage Mode Selector
+    const storageModeSelect = document.getElementById('storageModeSelect');
+    if (storageModeSelect && window.hybridStorage) {
+        // Set initial value sesuai mode aktif
+        window.hybridStorage.getStorageMode().then(mode => {
+            storageModeSelect.value = mode;
+        });
+        storageModeSelect.addEventListener('change', async function(e) {
+            const newMode = e.target.value;
+            storageModeSelect.disabled = true;
+            try {
+                await window.hybridStorage.setStorageMode(newMode);
+                // Optional: tampilkan notifikasi sukses
+                if (window.dashboard && window.dashboard.showSuccess) {
+                    window.dashboard.showSuccess(`✅ Mode penyimpanan diubah ke ${newMode}`);
+                } else {
+                    alert('Mode penyimpanan diubah ke: ' + newMode);
+                }
+                // Reload data
+                if (typeof loadHistoryData === 'function') {
+                    await loadHistoryData();
+                } else {
+                    location.reload();
+                }
+            } catch (error) {
+                // Optional: tampilkan notifikasi error
+                if (window.dashboard && window.dashboard.showError) {
+                    window.dashboard.showError('Gagal mengubah mode penyimpanan: ' + error.message);
+                } else {
+                    alert('Gagal mengubah mode penyimpanan: ' + error.message);
+                }
+                // Kembalikan ke mode sebelumnya
+                const currentMode = await window.hybridStorage.getStorageMode();
+                storageModeSelect.value = currentMode;
+            } finally {
+                storageModeSelect.disabled = false;
+            }
+        });
+    }
+    // Event listener untuk tombol Delete Selected dan Delete All
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    if (deleteSelectedBtn) deleteSelectedBtn.onclick = deleteSelectedEntriesWithConfirm;
+    const deleteAllBtn = document.getElementById('deleteAllBtn');
+    if (deleteAllBtn) deleteAllBtn.onclick = deleteAllEntriesWithConfirm;
+    // Pastikan tombol Bulk Actions juga memanggil handler dengan konfirmasi
+    const bulkBtn = document.getElementById('bulkActions');
+    if (bulkBtn) bulkBtn.onclick = deleteSelectedEntriesWithConfirm;
 });
 
 let currentPage = 1;
@@ -27,7 +98,7 @@ async function loadHistoryData() {
 
     try {
         if (storage && typeof storage.getEmotionData === 'function') {
-            data = await storage.getEmotionData({ limit: 10000, sortBy: 'timestamp', sortOrder: 'desc' });
+            data = await storage.getEmotionData({ sortBy: 'timestamp', sortOrder: 'desc' });
         } else if (window.localStorage) {
             // Fallback: langsung dari localStorage
             const raw = localStorage.getItem('aiEmotionData');
@@ -169,7 +240,6 @@ async function deleteEntryByIndex(index) {
 async function deleteSelectedEntries() {
     const checkboxes = document.querySelectorAll('.row-checkbox:checked');
     if (checkboxes.length === 0) return alert('No entries selected.');
-    if (!confirm('Are you sure you want to delete all selected entries?')) return;
     const storage = window.hybridStorage || window.dataStorage;
     let idsToDelete = [];
     checkboxes.forEach(cb => {
@@ -187,12 +257,6 @@ async function deleteSelectedEntries() {
     }
     await loadHistoryData();
 }
-
-// Event listener untuk tombol Bulk Actions
-setTimeout(() => {
-    const bulkBtn = document.getElementById('bulkActions');
-    if (bulkBtn) bulkBtn.onclick = deleteSelectedEntries;
-}, 500);
 
 function updateTableData(data) {
     allData = data;
@@ -265,5 +329,41 @@ if ('BroadcastChannel' in window) {
 window.addEventListener('storageModeChanged', function(e) {
     loadHistoryData();
 });
+
+async function deleteSelectedEntriesWithConfirm() {
+    const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+    if (checkboxes.length === 0) return alert('No entries selected.');
+    if (!confirm('Are you sure you want to delete all selected entries?')) return;
+    await deleteSelectedEntries();
+    alert('Selected entries deleted.');
+    await loadHistoryData();
+}
+
+async function deleteAllEntriesWithConfirm() {
+    if (!confirm('Are you sure you want to delete ALL entries? This action cannot be undone!')) return;
+    const storage = window.hybridStorage || window.dataStorage;
+    if (storage && typeof storage.deleteEmotionData === 'function') {
+        for (const entry of allData) {
+            if (entry.id) await storage.deleteEmotionData(entry.id);
+        }
+    } else {
+        // Fallback: hapus semua dari localStorage
+        localStorage.setItem('aiEmotionData', '[]');
+    }
+    alert('All entries deleted.');
+    await loadHistoryData();
+}
+
+// Prevent duplicate dashboard success messages in history page
+if (window.dashboard && window.dashboard.showSuccess) {
+    window.dashboard.showSuccess = (function(orig) {
+        let lastMsg = '';
+        return function(msg) {
+            if (msg === lastMsg) return; // suppress duplicate
+            lastMsg = msg;
+            orig.call(this, msg);
+        };
+    })(window.dashboard.showSuccess);
+}
 
 })();

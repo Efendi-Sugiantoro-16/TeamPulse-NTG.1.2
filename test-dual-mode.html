@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dual Mode Storage Test - TeamPulse</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+        .status.warning { background: #fff3cd; color: #856404; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .mode-selector {
+            margin: 20px 0;
+        }
+        .mode-selector select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Dual Mode Storage Test</h1>
+        <p>Test halaman untuk memverifikasi sistem dual mode storage (Local & Database)</p>
+
+        <!-- Storage Mode Selector -->
+        <div class="test-section">
+            <h3>🎯 Storage Mode Control</h3>
+            <div class="mode-selector">
+                <label for="storageMode">Storage Mode:</label>
+                <select id="storageMode">
+                    <option value="local">Local Storage</option>
+                    <option value="database">Database</option>
+                </select>
+                <button onclick="changeStorageMode()">Change Mode</button>
+            </div>
+            <div id="modeStatus" class="status info">Waiting for storage initialization...</div>
+        </div>
+
+        <!-- Test Data Operations -->
+        <div class="test-section">
+            <h3>📊 Test Data Operations</h3>
+            <button onclick="addTestData()">Add Test Data</button>
+            <button onclick="loadData()">Load Data</button>
+            <button onclick="clearData()">Clear Data</button>
+            <button onclick="getStorageInfo()">Get Storage Info</button>
+        </div>
+
+        <!-- Data Display -->
+        <div class="test-section">
+            <h3>📋 Data Display</h3>
+            <div id="dataDisplay">No data loaded</div>
+        </div>
+
+        <!-- Log Output -->
+        <div class="test-section">
+            <h3>📝 Log Output</h3>
+            <div id="logOutput" class="log"></div>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+    </div>
+
+    <!-- Load Hybrid Storage -->
+    <script src="js/hybridStorage.js"></script>
+    <script src="js/hybridStorageInit.js"></script>
+
+    <script>
+        let hybridStorage = null;
+        let currentMode = 'local';
+
+        // Initialize test
+        document.addEventListener('DOMContentLoaded', async function() {
+            log('🚀 Initializing dual mode storage test...');
+            
+            // Wait for hybrid storage to be ready
+            await waitForHybridStorage();
+            
+            // Set up initial mode
+            await updateModeDisplay();
+            
+            log('✅ Test initialization complete');
+        });
+
+        async function waitForHybridStorage() {
+            return new Promise((resolve) => {
+                const check = () => {
+                    if (window.hybridStorage) {
+                        hybridStorage = window.hybridStorage;
+                        log('✅ Hybrid Storage initialized');
+                        resolve();
+                    } else {
+                        setTimeout(check, 100);
+                    }
+                };
+                check();
+            });
+        }
+
+        async function updateModeDisplay() {
+            if (!hybridStorage) return;
+            
+            currentMode = await hybridStorage.getStorageMode();
+            document.getElementById('storageMode').value = currentMode;
+            
+            const dbAvailable = hybridStorage.isDatabaseAvailable();
+            const status = document.getElementById('modeStatus');
+            
+            if (currentMode === 'database') {
+                if (dbAvailable) {
+                    status.className = 'status success';
+                    status.textContent = '✅ Database Mode - Connected to server';
+                } else {
+                    status.className = 'status warning';
+                    status.textContent = '⚠️ Database Mode - Server not available (fallback to local)';
+                }
+            } else {
+                status.className = 'status info';
+                status.textContent = '📱 Local Mode - Data stored in browser';
+            }
+            
+            log(`🎯 Current mode: ${currentMode} (DB available: ${dbAvailable})`);
+        }
+
+        async function changeStorageMode() {
+            const newMode = document.getElementById('storageMode').value;
+            log(`🔄 Attempting to change mode to: ${newMode}`);
+            
+            try {
+                await hybridStorage.setStorageMode(newMode);
+                await updateModeDisplay();
+                log(`✅ Successfully changed to ${newMode} mode`);
+            } catch (error) {
+                log(`❌ Failed to change mode: ${error.message}`);
+                await updateModeDisplay(); // Revert display
+            }
+        }
+
+        async function addTestData() {
+            log('📝 Adding test data...');
+            
+            const testData = {
+                dominantEmotion: 'happy',
+                confidence: 0.85,
+                source: 'test',
+                notes: 'Test data from dual mode test'
+            };
+            
+            try {
+                const result = await hybridStorage.saveEmotionData(testData);
+                log(`✅ Test data saved: ${JSON.stringify(result)}`);
+                await loadData(); // Refresh display
+            } catch (error) {
+                log(`❌ Failed to save test data: ${error.message}`);
+            }
+        }
+
+        async function loadData() {
+            log('📊 Loading data...');
+            
+            try {
+                const data = await hybridStorage.getEmotionData();
+                log(`✅ Loaded ${data.length} entries`);
+                
+                const display = document.getElementById('dataDisplay');
+                if (data.length === 0) {
+                    display.innerHTML = '<p>No data found</p>';
+                } else {
+                    display.innerHTML = `
+                        <h4>Data (${data.length} entries):</h4>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr style="background: #f8f9fa;">
+                                <th style="border: 1px solid #ddd; padding: 8px;">ID</th>
+                                <th style="border: 1px solid #ddd; padding: 8px;">Emotion</th>
+                                <th style="border: 1px solid #ddd; padding: 8px;">Confidence</th>
+                                <th style="border: 1px solid #ddd; padding: 8px;">Source</th>
+                                <th style="border: 1px solid #ddd; padding: 8px;">Timestamp</th>
+                            </tr>
+                            ${data.slice(0, 10).map(item => `
+                                <tr>
+                                    <td style="border: 1px solid #ddd; padding: 8px;">${item.id}</td>
+                                    <td style="border: 1px solid #ddd; padding: 8px;">${item.dominantEmotion}</td>
+                                    <td style="border: 1px solid #ddd; padding: 8px;">${item.confidence}</td>
+                                    <td style="border: 1px solid #ddd; padding: 8px;">${item.source}</td>
+                                    <td style="border: 1px solid #ddd; padding: 8px;">${new Date(item.timestamp).toLocaleString()}</td>
+                                </tr>
+                            `).join('')}
+                        </table>
+                        ${data.length > 10 ? `<p><em>Showing first 10 of ${data.length} entries</em></p>` : ''}
+                    `;
+                }
+            } catch (error) {
+                log(`❌ Failed to load data: ${error.message}`);
+            }
+        }
+
+        async function clearData() {
+            log('🗑️ Clearing data...');
+            
+            try {
+                const data = await hybridStorage.getEmotionData();
+                for (const item of data) {
+                    await hybridStorage.deleteEmotionData(item.id);
+                }
+                log(`✅ Cleared ${data.length} entries`);
+                await loadData(); // Refresh display
+            } catch (error) {
+                log(`❌ Failed to clear data: ${error.message}`);
+            }
+        }
+
+        async function getStorageInfo() {
+            log('ℹ️ Getting storage info...');
+            
+            try {
+                const mode = await hybridStorage.getStorageMode();
+                const dbAvailable = hybridStorage.isDatabaseAvailable();
+                const stats = await hybridStorage.getStorageStats();
+                
+                log(`📊 Storage Info:
+- Mode: ${mode}
+- Database Available: ${dbAvailable}
+- Stats: ${JSON.stringify(stats)}`);
+            } catch (error) {
+                log(`❌ Failed to get storage info: ${error.message}`);
+            }
+        }
+
+        function log(message) {
+            const logOutput = document.getElementById('logOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            logOutput.innerHTML += `[${timestamp}] ${message}\n`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLog() {
+            document.getElementById('logOutput').innerHTML = '';
+        }
+
+        // Listen for storage mode changes
+        window.addEventListener('storageModeChanged', function(e) {
+            log(`🔄 Storage mode changed event: ${JSON.stringify(e.detail)}`);
+            updateModeDisplay();
+        });
+    </script>
+</body>
+</html> 

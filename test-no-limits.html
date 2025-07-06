@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test No Limits - TeamPulse</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+        .status.warning { background: #fff3cd; color: #856404; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .data-table th {
+            background-color: #f2f2f2;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .summary-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .summary-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .summary-label {
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test No Limits - Complete Data Verification</h1>
+        <p>Test halaman untuk memverifikasi bahwa semua data diambil tanpa batasan</p>
+
+        <!-- Test Controls -->
+        <div class="test-section">
+            <h3>🎯 Test Controls</h3>
+            <button onclick="testDirectAPI()">Test Direct API Call</button>
+            <button onclick="testHybridStorage()">Test Hybrid Storage</button>
+            <button onclick="testDashboard()">Test Dashboard Loading</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+
+        <!-- Results Summary -->
+        <div class="test-section">
+            <h3>📊 Results Summary</h3>
+            <div id="summary" class="summary">
+                <div class="summary-item">
+                    <div class="summary-value" id="apiCount">-</div>
+                    <div class="summary-label">API Response Count</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="storageCount">-</div>
+                    <div class="summary-label">Storage Count</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="dashboardCount">-</div>
+                    <div class="summary-label">Dashboard Count</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="filteredCount">-</div>
+                    <div class="summary-label">Filtered Count</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Display -->
+        <div class="test-section">
+            <h3>📋 Data Display (First 10 Items)</h3>
+            <div id="dataDisplay">No data loaded</div>
+        </div>
+
+        <!-- Log Output -->
+        <div class="test-section">
+            <h3>📝 Detailed Log Output</h3>
+            <div id="logOutput" class="log"></div>
+        </div>
+    </div>
+
+    <!-- Load Hybrid Storage -->
+    <script src="js/hybridStorage.js"></script>
+    <script src="js/hybridStorageInit.js"></script>
+
+    <script>
+        let hybridStorage = null;
+
+        // Initialize test
+        document.addEventListener('DOMContentLoaded', async function() {
+            log('🚀 Initializing no limits test...');
+            
+            // Wait for hybrid storage to be ready
+            await waitForHybridStorage();
+            
+            log('✅ Test initialization complete');
+        });
+
+        async function waitForHybridStorage() {
+            return new Promise((resolve) => {
+                const check = () => {
+                    if (window.hybridStorage) {
+                        hybridStorage = window.hybridStorage;
+                        log('✅ Hybrid Storage initialized');
+                        resolve();
+                    } else {
+                        setTimeout(check, 100);
+                    }
+                };
+                check();
+            });
+        }
+
+        async function testDirectAPI() {
+            log('🔗 Testing direct API call...');
+            
+            try {
+                const response = await fetch('/api/emotions');
+                const data = await response.json();
+                
+                log(`📊 API Response: ${data.count} items`);
+                log(`📊 Success: ${data.success}`);
+                log(`📊 Data array length: ${data.data ? data.data.length : 'no data'}`);
+                
+                document.getElementById('apiCount').textContent = data.count || data.data?.length || 0;
+                
+                if (data.data && data.data.length > 0) {
+                    displayData(data.data.slice(0, 10), 'API Data');
+                    log('📋 Sample API data (first 3):', data.data.slice(0, 3));
+                }
+                
+            } catch (error) {
+                log(`❌ API test failed: ${error.message}`);
+            }
+        }
+
+        async function testHybridStorage() {
+            log('🗄️ Testing hybrid storage...');
+            
+            try {
+                const data = await hybridStorage.getEmotionData();
+                
+                log(`📊 Storage Response: ${data.length} items`);
+                document.getElementById('storageCount').textContent = data.length;
+                
+                if (data.length > 0) {
+                    displayData(data.slice(0, 10), 'Storage Data');
+                    log('📋 Sample storage data (first 3):', data.slice(0, 3));
+                }
+                
+            } catch (error) {
+                log(`❌ Storage test failed: ${error.message}`);
+            }
+        }
+
+        async function testDashboard() {
+            log('📊 Testing dashboard loading...');
+            
+            try {
+                // Simulate dashboard loading
+                const data = await hybridStorage.getEmotionData();
+                
+                log(`📊 Raw data: ${data.length} items`);
+                
+                // Simulate period filtering (like dashboard does)
+                const now = new Date();
+                const startDate = new Date(now.getFullYear(), now.getMonth(), 1); // Month filter
+                
+                const filteredData = data.filter(item => {
+                    const itemDate = new Date(item.timestamp);
+                    return itemDate >= startDate;
+                });
+                
+                log(`📊 After month filter: ${filteredData.length} items`);
+                
+                document.getElementById('dashboardCount').textContent = data.length;
+                document.getElementById('filteredCount').textContent = filteredData.length;
+                
+                if (filteredData.length > 0) {
+                    displayData(filteredData.slice(0, 10), 'Filtered Data');
+                }
+                
+            } catch (error) {
+                log(`❌ Dashboard test failed: ${error.message}`);
+            }
+        }
+
+        function displayData(data, title) {
+            const display = document.getElementById('dataDisplay');
+            
+            if (data.length === 0) {
+                display.innerHTML = `<p>No ${title} found</p>`;
+                return;
+            }
+            
+            const tableHTML = `
+                <h4>${title} (${data.length} items shown)</h4>
+                <table class="data-table">
+                    <tr>
+                        <th>ID</th>
+                        <th>Emotion</th>
+                        <th>Confidence</th>
+                        <th>Source</th>
+                        <th>Timestamp</th>
+                    </tr>
+                    ${data.map(item => `
+                        <tr>
+                            <td>${item.id}</td>
+                            <td>${item.dominantEmotion || item.emotion}</td>
+                            <td>${(item.confidence * 100).toFixed(1)}%</td>
+                            <td>${item.source}</td>
+                            <td>${new Date(item.timestamp).toLocaleString()}</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            `;
+            
+            display.innerHTML = tableHTML;
+        }
+
+        function log(message, data = null) {
+            const logOutput = document.getElementById('logOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            let logMessage = `[${timestamp}] ${message}`;
+            
+            if (data) {
+                logMessage += '\n' + JSON.stringify(data, null, 2);
+            }
+            
+            logOutput.innerHTML += logMessage + '\n';
+            logOutput.scrollTop = logOutput.scrollHeight;
+            console.log(message, data);
+        }
+
+        function clearLog() {
+            document.getElementById('logOutput').innerHTML = '';
+        }
+    </script>
+</body>
+</html> 

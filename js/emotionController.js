@@ -141,12 +141,221 @@ class EmotionController {
 
     async handleCaptureSnapshot() {
         try {
-            const snapshotData = await this.cameraManager.captureSnapshot();
-            this.handleEmotionDetected(snapshotData, 'camera_snapshot');
-            this.uiManager.showNotification('Snapshot captured and analyzed!');
+            console.log('EmotionController: Capturing snapshot...');
+            
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.getElementById('cameraCanvas');
+            
+            if (!video || !canvas) {
+                throw new Error('Video or canvas element not found');
+            }
+            
+            // Draw video frame to canvas
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            let detectionData = null;
+            
+            // Analyze snapshot if face detection is available
+            if (this.faceApiLoaded) {
+                try {
+                    const detections = await faceapi.detectAllFaces(
+                        canvas, 
+                        new faceapi.TinyFaceDetectorOptions({
+                            inputSize: 320,  // Increased for better accuracy
+                            scoreThreshold: 0.6  // Higher threshold for more confident detections
+                        })
+                    ).withFaceLandmarks().withFaceExpressions();
+                    
+                    if (detections.length > 0) {
+                        // Enhanced bounding box with gradient and better styling
+                        detections.forEach(det => {
+                            const box = det.detection.box;
+                            
+                            // Draw bounding box with gradient and shadow
+                            ctx.save();
+                            
+                            // Create gradient for bounding box
+                            const gradient = ctx.createLinearGradient(box.x, box.y, box.x + box.width, box.y + box.height);
+                            gradient.addColorStop(0, 'rgba(0, 255, 127, 0.9)');  // Bright green
+                            gradient.addColorStop(0.5, 'rgba(0, 200, 100, 0.95)'); // Medium green
+                            gradient.addColorStop(1, 'rgba(0, 150, 75, 0.9)');   // Dark green
+                            
+                            ctx.strokeStyle = gradient;
+                            ctx.lineWidth = 3;
+                            ctx.lineCap = 'round';
+                            ctx.lineJoin = 'round';
+                            
+                            // Enhanced shadow
+                            ctx.shadowColor = 'rgba(0, 255, 127, 0.6)';
+                            ctx.shadowBlur = 15;
+                            ctx.shadowOffsetX = 2;
+                            ctx.shadowOffsetY = 2;
+                            
+                            // Draw rounded rectangle
+                            const radius = 8;
+                            ctx.beginPath();
+                            ctx.moveTo(box.x + radius, box.y);
+                            ctx.lineTo(box.x + box.width - radius, box.y);
+                            ctx.quadraticCurveTo(box.x + box.width, box.y, box.x + box.width, box.y + radius);
+                            ctx.lineTo(box.x + box.width, box.y + box.height - radius);
+                            ctx.quadraticCurveTo(box.x + box.width, box.y + box.height, box.x + box.width - radius, box.y + box.height);
+                            ctx.lineTo(box.x + radius, box.y + box.height);
+                            ctx.quadraticCurveTo(box.x, box.y + box.height, box.x, box.y + box.height - radius);
+                            ctx.lineTo(box.x, box.y + radius);
+                            ctx.quadraticCurveTo(box.x, box.y, box.x + radius, box.y);
+                            ctx.closePath();
+                            ctx.stroke();
+                            
+                            // Draw corner indicators
+                            const cornerSize = 12;
+                            ctx.lineWidth = 2;
+                            ctx.shadowBlur = 8;
+                            
+                            // Top-left corner
+                            ctx.beginPath();
+                            ctx.moveTo(box.x, box.y + cornerSize);
+                            ctx.lineTo(box.x, box.y);
+                            ctx.lineTo(box.x + cornerSize, box.y);
+                            ctx.stroke();
+                            
+                            // Top-right corner
+                            ctx.beginPath();
+                            ctx.moveTo(box.x + box.width - cornerSize, box.y);
+                            ctx.lineTo(box.x + box.width, box.y);
+                            ctx.lineTo(box.x + box.width, box.y + cornerSize);
+                            ctx.stroke();
+                            
+                            // Bottom-right corner
+                            ctx.beginPath();
+                            ctx.moveTo(box.x + box.width, box.y + box.height - cornerSize);
+                            ctx.lineTo(box.x + box.width, box.y + box.height);
+                            ctx.lineTo(box.x + box.width - cornerSize, box.y + box.height);
+                            ctx.stroke();
+                            
+                            // Bottom-left corner
+                            ctx.beginPath();
+                            ctx.moveTo(box.x + cornerSize, box.y + box.height);
+                            ctx.lineTo(box.x, box.y + box.height);
+                            ctx.lineTo(box.x, box.y + box.height - cornerSize);
+                            ctx.stroke();
+                            
+                            ctx.restore();
+                        });
+                        
+                        // Enhanced landmark drawing with better visibility
+                        detections.forEach(det => {
+                            if (det.landmarks) {
+                                ctx.save();
+                                
+                                const points = det.landmarks.positions;
+                                
+                                // Draw landmark connections with gradient
+                                const landmarkGradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                                landmarkGradient.addColorStop(0, 'rgba(255, 165, 0, 0.8)');  // Orange
+                                landmarkGradient.addColorStop(0.5, 'rgba(255, 140, 0, 0.9)'); // Dark orange
+                                landmarkGradient.addColorStop(1, 'rgba(255, 120, 0, 0.8)');  // Red-orange
+                                
+                                ctx.strokeStyle = landmarkGradient;
+                                ctx.lineWidth = 2;
+                                ctx.lineCap = 'round';
+                                ctx.lineJoin = 'round';
+                                
+                                // Enhanced shadow for landmarks
+                                ctx.shadowColor = 'rgba(255, 165, 0, 0.5)';
+                                ctx.shadowBlur = 8;
+                                ctx.shadowOffsetX = 1;
+                                ctx.shadowOffsetY = 1;
+                                
+                                // Draw landmark connections
+                                ctx.beginPath();
+                                for (let i = 0; i < points.length; i++) {
+                                    const pt = points[i];
+                                    if (i === 0) ctx.moveTo(pt.x, pt.y);
+                                    else ctx.lineTo(pt.x, pt.y);
+                                }
+                                ctx.closePath();
+                                ctx.stroke();
+                                
+                                // Draw individual landmark points with enhanced styling
+                                points.forEach((pt, index) => {
+                                    ctx.save();
+                                    
+                                    // Different sizes for different landmark types
+                                    let pointSize = 2;
+                                    if (index < 17) pointSize = 3; // Face outline
+                                    else if (index < 27) pointSize = 2.5; // Eyebrows
+                                    else if (index < 36) pointSize = 2; // Nose
+                                    else if (index < 48) pointSize = 2.5; // Eyes
+                                    else pointSize = 2; // Mouth
+                                    
+                                    // Create radial gradient for points
+                                    const pointGradient = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, pointSize);
+                                    pointGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                                    pointGradient.addColorStop(0.5, 'rgba(255, 165, 0, 0.8)');
+                                    pointGradient.addColorStop(1, 'rgba(255, 140, 0, 0.6)');
+                                    
+                                    ctx.fillStyle = pointGradient;
+                                    ctx.shadowColor = 'rgba(255, 165, 0, 0.4)';
+                                    ctx.shadowBlur = 4;
+                                    ctx.shadowOffsetX = 0;
+                                    ctx.shadowOffsetY = 0;
+                                    
+                                    ctx.beginPath();
+                                    ctx.arc(pt.x, pt.y, pointSize, 0, 2 * Math.PI);
+                                    ctx.fill();
+                                    
+                                    ctx.restore();
+                                });
+                                
+                                ctx.restore();
+                            }
+                        });
+                        
+                        const face = detections[0];
+                        const expressions = face.expressions;
+                        const dominantExpression = Object.entries(expressions)
+                            .reduce((a, b) => a[1] > b[1] ? a : b);
+                        
+                        const emotion = this.mapExpressionToEmotion(dominantExpression[0]);
+                        const confidence = dominantExpression[1];
+                        
+                        detectionData = {
+                            emotion: emotion,
+                            dominantEmotion: emotion,
+                            confidence: confidence,
+                            expressions: expressions,
+                            source: 'camera_snapshot',
+                            timestamp: new Date().toISOString()
+                        };
+                    }
+                } catch (error) {
+                    console.warn('EmotionController: Snapshot analysis failed:', error);
+                }
+            }
+            
+            // Fallback to simulation if no face detected or analysis failed
+            if (!detectionData) {
+                const emotions = ['happy', 'sad', 'angry', 'excited', 'fearful', 'surprised', 'neutral', 'confused'];
+                const randomEmotion = emotions[Math.floor(Math.random() * emotions.length)];
+                const confidence = 0.5 + Math.random() * 0.5;
+                
+                detectionData = {
+                    emotion: randomEmotion,
+                    dominantEmotion: randomEmotion,
+                    confidence: confidence,
+                    expressions: {},
+                    source: 'camera_snapshot_simulation',
+                    timestamp: new Date().toISOString()
+                };
+            }
+            
+            console.log('EmotionController: Snapshot captured');
+            return detectionData;
+            
         } catch (error) {
             console.error('EmotionController: Snapshot failed:', error);
-            this.uiManager.showError('Failed to capture snapshot: ' + error.message);
+            throw error;
         }
     }
 
@@ -523,31 +732,77 @@ class EmotionController {
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        // Hide video, show preview
-        const imgSrc = canvas.toDataURL('image/png');
-        this.uiManager.updateSnapshotUI('preview', { imgSrc });
-        // Analisis emosi dengan face-api.js
+        // Analisis emosi & landmark dengan face-api.js pada canvas
         this.uiManager.updateSnapshotStatus('Menganalisis emosi...');
         try {
             await faceapi.nets.tinyFaceDetector.loadFromUri('models/');
             await faceapi.nets.faceExpressionNet.loadFromUri('models/');
-            const detections = await faceapi.detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
-            if (detections && detections.expressions) {
+            await faceapi.nets.faceLandmark68Net.loadFromUri('models/');
+            const detections = await faceapi.detectAllFaces(
+                canvas,
+                new faceapi.TinyFaceDetectorOptions()
+            ).withFaceLandmarks().withFaceExpressions();
+            ctx.save();
+            ctx.globalAlpha = 1;
+            ctx.restore();
+            if (detections.length > 0) {
+                // Custom: Gambar bounding box dan landmark (seperti live camera)
+                detections.forEach(det => {
+                    const box = det.detection.box;
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(0, 200, 80, 0.95)';
+                    ctx.lineWidth = 4;
+                    ctx.shadowColor = 'rgba(0,200,80,0.5)';
+                    ctx.shadowBlur = 12;
+                    ctx.beginPath();
+                    ctx.rect(box.x, box.y, box.width, box.height);
+                    ctx.stroke();
+                    ctx.restore();
+                });
+                detections.forEach(det => {
+                    if (det.landmarks) {
+                        ctx.save();
+                        ctx.strokeStyle = 'orange';
+                        ctx.lineWidth = 3;
+                        ctx.shadowColor = 'rgba(255,140,0,0.4)';
+                        ctx.shadowBlur = 6;
+                        const points = det.landmarks.positions;
+                        ctx.beginPath();
+                        for (let i = 0; i < points.length; i++) {
+                            const pt = points[i];
+                            if (i === 0) ctx.moveTo(pt.x, pt.y);
+                            else ctx.lineTo(pt.x, pt.y);
+                        }
+                        ctx.closePath();
+                        ctx.stroke();
+                        points.forEach(pt => {
+                            ctx.beginPath();
+                            ctx.arc(pt.x, pt.y, 2.5, 0, 2 * Math.PI);
+                            ctx.fillStyle = 'orange';
+                            ctx.shadowBlur = 0;
+                            ctx.fill();
+                        });
+                        ctx.restore();
+                    }
+                });
+                // Hapus faceapi bawaan untuk menghindari duplikasi landmark
+                // faceapi.draw.drawDetections(canvas, detections);
+                // faceapi.draw.drawFaceLandmarks(canvas, detections);
                 // Cari emosi dominan
                 let maxEmotion = 'neutral';
                 let maxValue = 0;
-                for (const [emo, val] of Object.entries(detections.expressions)) {
+                for (const [emo, val] of Object.entries(detections[0].expressions)) {
                     if (val > maxValue) {
                         maxValue = val;
                         maxEmotion = emo;
                     }
                 }
                 this.uiManager.updateSnapshotUI('preview', {
+                    imgSrc: canvas.toDataURL('image/png'),
                     emotion: this.capitalizeFirst(maxEmotion),
                     confidence: maxValue,
                     faceDetected: 'Yes'
                 });
-                // Tampilkan di AI Detected Emotion utama
                 this.uiManager.updateEmotionDisplay({
                     emotion: this.capitalizeFirst(maxEmotion),
                     confidence: maxValue,
@@ -555,6 +810,7 @@ class EmotionController {
                 });
             } else {
                 this.uiManager.updateSnapshotUI('preview', {
+                    imgSrc: canvas.toDataURL('image/png'),
                     emotion: '-',
                     confidence: 0,
                     faceDetected: 'No'

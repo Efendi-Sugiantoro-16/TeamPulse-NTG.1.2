@@ -7,7 +7,7 @@ class Dashboard {
     constructor() {
         this.data = [];
         this.filteredData = [];
-        this.currentPeriod = 'day';
+        this.currentPeriod = 'all';
         this.charts = {};
         this.storage = null;
         this.isLoading = false;
@@ -146,13 +146,44 @@ class Dashboard {
             // Set initial value sesuai mode aktif
             window.hybridStorage.getStorageMode().then(mode => {
                 storageModeSelector.value = mode;
+                console.log(`🎯 Initial storage mode set to: ${mode}`);
             });
+            
             storageModeSelector.addEventListener('change', async function(e) {
-                await window.hybridStorage.setStorageMode(e.target.value);
-                if (window.dashboard && window.dashboard.refreshData) {
-                    window.dashboard.refreshData();
-                } else {
-                    location.reload();
+                try {
+                    const newMode = e.target.value;
+                    console.log(`🔄 User requested storage mode change to: ${newMode}`);
+                    
+                    // Disable selector during change
+                    storageModeSelector.disabled = true;
+                    
+                    await window.hybridStorage.setStorageMode(newMode);
+                    
+                    // Show success message
+                    if (window.dashboard && window.dashboard.showSuccess) {
+                        window.dashboard.showSuccess(`✅ Storage mode changed to ${newMode}`);
+                    }
+                    
+                    // Refresh data with new mode
+                    if (window.dashboard && window.dashboard.refreshData) {
+                        console.log('🔄 Refreshing dashboard data with new storage mode...');
+                        await window.dashboard.refreshData(true);
+                    } else {
+                        console.log('🔄 Reloading page with new storage mode...');
+                        location.reload();
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to change storage mode:', error);
+                    // Revert selector to previous value
+                    const currentMode = await window.hybridStorage.getStorageMode();
+                    storageModeSelector.value = currentMode;
+                    
+                    if (window.dashboard && window.dashboard.showError) {
+                        window.dashboard.showError(`❌ Failed to change storage mode: ${error.message}`);
+                    }
+                } finally {
+                    // Re-enable selector
+                    storageModeSelector.disabled = false;
                 }
             });
         }
@@ -162,19 +193,35 @@ class Dashboard {
         this.isLoading = true;
         this.showLoading();
         try {
-            // Get data from storage
-            this.data = await this.storage.getEmotionData({ limit: -1 });
+            // NO LIMITS - Get all data regardless of storage mode
+            console.log('🔄 Loading ALL data from storage (no limits applied)');
+            console.log('📊 Current storage mode:', this.storage.storageMode);
+            
+            this.data = await this.storage.getEmotionData();
+            
+            console.log(`📈 Raw data received: ${this.data.length} items`);
+            console.log('📋 Sample data (first 3):', this.data.slice(0, 3));
+            
             // Normalisasi ID agar selalu number jika string angka
             this.data = this.data.map(item => ({
                 ...item,
                 id: (typeof item.id === 'string' && /^\d+$/.test(item.id)) ? Number(item.id) : item.id
             }));
-            console.log('Data loaded for dashboard:', this.data);
+            
+            console.log(`✅ Data loaded for dashboard: ${this.data.length} entries from ${this.storage.storageMode} storage`);
+            
             // Filter data based on current period
             this.filterDataByPeriod();
+            
+            console.log(`📊 After period filtering: ${this.filteredData.length} items`);
+            console.log('📋 Filtered sample (first 3):', this.filteredData.slice(0, 3));
+            
+            // Show data source info
+            this.showDataInfo();
+            
         } catch (error) {
-            console.error('Failed to load data:', error);
-            this.showError('Failed to load data');
+            console.error('❌ Failed to load data:', error);
+            this.showError('Failed to load data: ' + error.message);
         } finally {
             this.isLoading = false;
             this.hideLoading();
@@ -185,45 +232,71 @@ class Dashboard {
         const now = new Date();
         let startDate;
 
+        console.log(`🔍 Filtering data by period: ${this.currentPeriod}`);
+
         switch (this.currentPeriod) {
+            case 'all':
+                startDate = null;
+                console.log('📅 All data filter - showing complete dataset');
+                break;
             case 'day':
                 startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                console.log('📅 Day filter - from:', startDate);
                 break;
             case 'week':
                 startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                console.log('📅 Week filter - from:', startDate);
                 break;
             case 'month':
                 startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                console.log('📅 Month filter - from:', startDate);
                 break;
             case 'year':
                 startDate = new Date(now.getFullYear(), 0, 1);
+                console.log('📅 Year filter - from:', startDate);
                 break;
             default:
                 startDate = null;
+                console.log('📅 Default: showing all data');
         }
 
         if (!startDate) {
             this.filteredData = this.data;
+            console.log('✅ No date filter applied - using all data');
         } else {
-        this.filteredData = this.data.filter(item => {
-            const itemDate = new Date(item.timestamp);
-            return itemDate >= startDate;
-        });
+            this.filteredData = this.data.filter(item => {
+                const itemDate = new Date(item.timestamp);
+                return itemDate >= startDate;
+            });
+            console.log(`✅ Date filter applied - ${this.filteredData.length} items match criteria`);
         }
+        
         // Fallback: jika filter menghasilkan kosong tapi data ada, pakai data penuh
         if (this.filteredData.length === 0 && this.data.length > 0) {
+            console.log('⚠️ Filter resulted in empty data, using all data as fallback');
             this.filteredData = this.data;
         }
+        
+        console.log(`📊 Final filtered data: ${this.filteredData.length} items`);
     }
 
     setPeriod(period) {
         this.currentPeriod = period;
         
+        console.log(`🔄 Setting period to: ${period}`);
+        
         // Update active button
         document.querySelectorAll('.period-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        document.querySelector(`[data-period="${period}"]`).classList.add('active');
+        
+        const activeButton = document.querySelector(`[data-period="${period}"]`);
+        if (activeButton) {
+            activeButton.classList.add('active');
+            console.log(`✅ Activated button: ${period}`);
+        } else {
+            console.warn(`⚠️ Button for period "${period}" not found`);
+        }
         
         // Re-filter and re-render
         this.filterDataByPeriod();
@@ -232,9 +305,11 @@ class Dashboard {
         this.renderRecentEntries();
         this.renderActivityFeed();
         this.renderRecentSummary();
+        
+        console.log(`📊 Period changed to ${period} - showing ${this.filteredData.length} items`);
     }
 
-    async refreshData() {
+    async refreshData(suppressSuccess = false) {
         await this.loadData();
         this.renderStatistics();
         this.renderCharts();
@@ -245,13 +320,14 @@ class Dashboard {
         this.renderEmotionDistributionChart();
         this.renderEmotionTrendChart();
         this.renderTotalDataChart();
-        this.showSuccess('Data refreshed successfully');
+        if (!suppressSuccess) {
+            this.showSuccess('Data refreshed successfully');
+        }
     }
 
     renderRecentSummary() {
         const recentData = this.filteredData.slice(0, 10);
-        const summaryContainer = document.getElementById('recentSummary');
-        
+        let summaryContainer = document.getElementById('recentSummary');
         if (!summaryContainer) {
             // Buat container jika belum ada
             const dashboardContent = document.querySelector('.dashboard-content');
@@ -260,53 +336,74 @@ class Dashboard {
                 summaryDiv.id = 'recentSummary';
                 summaryDiv.className = 'recent-summary mb-4';
                 dashboardContent.insertBefore(summaryDiv, dashboardContent.firstChild);
+                summaryContainer = summaryDiv;
             }
         }
-
+        // Selalu render summary card, meskipun data kosong
+        let summaryHTML = '';
         if (recentData.length === 0) {
-            if (summaryContainer) {
-                summaryContainer.innerHTML = '<div class="message info">Belum ada data recent entries. Silakan tambah data emosi terlebih dahulu.</div>';
-            }
-            return;
+            summaryHTML = `
+                <div class="summary-card">
+                    <div class="summary-header">
+                        <h3><i class="fas fa-chart-line"></i> Ringkasan Recent Entries (10 Terbaru)</h3>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-item">
+                            <span class="summary-label">Total Entries:</span>
+                            <span class="summary-value">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Emosi Dominan:</span>
+                            <span class="summary-value emotion-badge neutral">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Rata-rata Confidence:</span>
+                            <span class="summary-value">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Rentang Waktu:</span>
+                            <span class="summary-value">-</span>
+                        </div>
+                    </div>
+                    <div class="summary-footer" style="margin-top:10px;color:#64748b;font-size:0.95em;">
+                        Belum ada data recent entries. Silakan tambah data emosi terlebih dahulu.
+                    </div>
+                </div>
+            `;
+        } else {
+            const emotionCounts = {};
+            const avgConfidence = recentData.reduce((sum, item) => sum + (item.confidence || 0), 0) / recentData.length;
+            recentData.forEach(item => {
+                const emotion = item.dominantEmotion || 'unknown';
+                emotionCounts[emotion] = (emotionCounts[emotion] || 0) + 1;
+            });
+            const dominantEmotion = Object.entries(emotionCounts).reduce((a, b) => emotionCounts[a] > emotionCounts[b] ? a : b);
+            summaryHTML = `
+                <div class="summary-card">
+                    <div class="summary-header">
+                        <h3><i class="fas fa-chart-line"></i> Ringkasan Recent Entries (10 Terbaru)</h3>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-item">
+                            <span class="summary-label">Total Entries:</span>
+                            <span class="summary-value">${recentData.length}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Emosi Dominan:</span>
+                            <span class="summary-value emotion-badge ${dominantEmotion}">${dominantEmotion}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Rata-rata Confidence:</span>
+                            <span class="summary-value">${(avgConfidence * 100).toFixed(1)}%</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Rentang Waktu:</span>
+                            <span class="summary-value">${this.getTimeRange(recentData)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
-
-        const emotionCounts = {};
-        const avgConfidence = recentData.reduce((sum, item) => sum + (item.confidence || 0), 0) / recentData.length;
-        
-        recentData.forEach(item => {
-            const emotion = item.dominantEmotion || 'unknown';
-            emotionCounts[emotion] = (emotionCounts[emotion] || 0) + 1;
-        });
-
-        const dominantEmotion = Object.entries(emotionCounts).reduce((a, b) => 
-            emotionCounts[a] > emotionCounts[b] ? a : b);
-
-        const summaryHTML = `
-            <div class="summary-card">
-                <div class="summary-header">
-                    <h3><i class="fas fa-chart-line"></i> Ringkasan Recent Entries (10 Terbaru)</h3>
-                </div>
-                <div class="summary-content">
-                    <div class="summary-item">
-                        <span class="summary-label">Total Entries:</span>
-                        <span class="summary-value">${recentData.length}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Emosi Dominan:</span>
-                        <span class="summary-value emotion-badge ${dominantEmotion}">${dominantEmotion}</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Rata-rata Confidence:</span>
-                        <span class="summary-value">${(avgConfidence * 100).toFixed(1)}%</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="summary-label">Rentang Waktu:</span>
-                        <span class="summary-value">${this.getTimeRange(recentData)}</span>
-                    </div>
-                </div>
-            </div>
-        `;
-
         if (summaryContainer) {
             summaryContainer.innerHTML = summaryHTML;
         }
@@ -333,6 +430,14 @@ class Dashboard {
     renderStatistics() {
         const stats = this.calculateStatistics();
         const recentStats = this.calculateRecentStatistics();
+        
+        console.log(`📊 Rendering statistics:`);
+        console.log(`   - Total entries: ${stats.totalEntries} (from ${this.filteredData.length} filtered data)`);
+        console.log(`   - Overall mood: ${recentStats.overallMood}`);
+        console.log(`   - Stress level: ${recentStats.stressLevel}`);
+        console.log(`   - Engagement: ${stats.engagement}`);
+        console.log(`   - Data quality: ${recentStats.dataQuality}`);
+        console.log(`   - Active users: ${stats.activeUsers}`);
         
         // Update stat cards
         this.updateStatCard('totalEntries', stats.totalEntries);
@@ -1259,11 +1364,23 @@ class Dashboard {
     renderStorageStatus() {
         const status = document.getElementById('storageStatus');
         if (!status) return;
+        
         let storageInfo = this.getStorageInfo();
         // Perbaiki jika storageInfo adalah Promise
         if (typeof storageInfo === 'object' && typeof storageInfo.then === 'function') {
             storageInfo = { records: this.data.length, storage: this.storage ? this.storage.constructor.name : '-', lastUpdate: 'N/A' };
         }
+        
+        // Get current storage mode
+        let currentMode = 'Local';
+        let dbStatus = '';
+        if (window.hybridStorage) {
+            currentMode = window.hybridStorage.storageMode;
+            if (currentMode === 'database') {
+                dbStatus = window.hybridStorage.isDatabaseAvailable() ? ' (Online)' : ' (Offline)';
+            }
+        }
+        
         status.innerHTML = `
             <div class="status-item">
                 <span class="status-label">Records:</span>
@@ -1271,18 +1388,56 @@ class Dashboard {
             </div>
             <div class="status-item">
                 <span class="status-label">Storage:</span>
-                <span class="status-value">${storageInfo.storage}</span>
+                <span class="status-value">${currentMode}${dbStatus}</span>
             </div>
             <div class="status-item">
                 <span class="status-label">Last Update:</span>
                 <span class="status-value">${storageInfo.lastUpdate}</span>
             </div>
         `;
+        
+        // Update storage mode selector if available
+        const storageModeSelector = document.getElementById('storageModeSelector');
+        if (storageModeSelector && window.hybridStorage) {
+            storageModeSelector.value = currentMode;
+            
+            // Disable database option if not available
+            const databaseOption = storageModeSelector.querySelector('option[value="database"]');
+            if (databaseOption) {
+                if (!window.hybridStorage.isDatabaseAvailable()) {
+                    databaseOption.disabled = true;
+                    databaseOption.text = 'Database (Unavailable)';
+                } else {
+                    databaseOption.disabled = false;
+                    databaseOption.text = 'Database';
+                }
+            }
+        }
     }
 
     getStorageInfo() {
         const records = this.data.length;
-        const storage = this.storage.getStorageMode ? this.storage.getStorageMode() : 'Local';
+        let storage = 'Local';
+        
+        // Handle async storage mode
+        if (this.storage && this.storage.getStorageMode) {
+            if (typeof this.storage.getStorageMode === 'function') {
+                // If it's async, return a promise
+                if (this.storage.getStorageMode.toString().includes('async')) {
+                    return this.storage.getStorageMode().then(mode => ({
+                        records,
+                        storage: mode,
+                        lastUpdate: this.data.length > 0 
+                            ? this.getTimeAgo(new Date(this.data[0].timestamp))
+                            : 'Never'
+                    }));
+                } else {
+                    // If it's sync, call directly
+                    storage = this.storage.getStorageMode();
+                }
+            }
+        }
+        
         const lastUpdate = this.data.length > 0 
             ? this.getTimeAgo(new Date(this.data[0].timestamp))
             : 'Never';
@@ -1353,13 +1508,21 @@ class Dashboard {
         return csvRows.join('\n');
     }
 
+    // Helper untuk normalisasi ID (string/number)
+    normalizeId(id) {
+        if (id === undefined || id === null) return id;
+        if (typeof id === 'number') return id;
+        if (typeof id === 'string' && /^\d+$/.test(id)) return Number(id);
+        return id;
+    }
+
     async viewEntry(id) {
-        const entry = this.data.find(item => item.id === id);
+        const normId = this.normalizeId(id);
+        const entry = this.data.find(item => this.normalizeId(item.id) == normId);
         if (!entry) {
             this.showError('Entry not found');
             return;
         }
-
         const details = `
             ID: ${entry.id}
             Timestamp: ${new Date(entry.timestamp).toLocaleString()}
@@ -1368,39 +1531,37 @@ class Dashboard {
             Source: ${entry.source || 'Unknown'}
             User ID: ${entry.userId || 'Unknown'}
         `;
-
         alert(details);
     }
 
     async deleteEntry(id) {
+        const normId = this.normalizeId(id);
         if (!confirm('Apakah Anda yakin ingin menghapus entry ini?')) return;
-
         try {
-            console.log(`Attempting to delete entry with ID: ${id}`);
+            console.log(`Attempting to delete entry with ID: ${normId}`);
             if (!this.storage) {
                 throw new Error('Storage system not available');
             }
             if (typeof this.storage.deleteEmotionData !== 'function') {
                 throw new Error('Delete method not available in storage system');
             }
-            const beforeData = await this.storage.getEmotionData({ limit: 1000 });
-            const targetEntry = beforeData.find(item => item.id === id);
+            const beforeData = await this.storage.getEmotionData();
+            const targetEntry = beforeData.find(item => this.normalizeId(item.id) == normId);
             if (!targetEntry) {
                 throw new Error('Entry not found or already deleted');
             }
             console.log('Found entry to delete:', targetEntry);
             console.log(`Total entries before deletion: ${beforeData.length}`);
-            const result = await this.storage.deleteEmotionData(id);
+            const result = await this.storage.deleteEmotionData(normId);
             if (result === false) {
                 throw new Error('Delete operation returned false');
             }
-            const afterData = await this.storage.getEmotionData({ limit: 1000 });
-            console.log(`Total entries after deletion: ${afterData.length}`);
-            const stillExists = afterData.find(item => item.id === id);
+            const afterData = await this.storage.getEmotionData();
+            const stillExists = afterData.find(item => this.normalizeId(item.id) == normId);
             if (stillExists) {
                 throw new Error('Entry still exists after deletion');
             }
-            console.log(`Successfully deleted entry with ID: ${id}`);
+            console.log(`Successfully deleted entry with ID: ${normId}`);
             await this.refreshData();
             this.showSuccess('Entry berhasil dihapus');
         } catch (error) {
@@ -1463,6 +1624,34 @@ class Dashboard {
     showInfo(message) {
         this.showMessage(message, 'info');
     }
+
+    showDataInfo() {
+        const storageMode = this.storage.storageMode;
+        const dataCount = this.data.length;
+        const totalCount = this.data.length; // For now, we don't have total count
+        
+        let message = `📊 Loaded ${dataCount} entries from ${storageMode} storage`;
+        
+        if (storageMode === 'database' && dataCount >= 500) {
+            message += ` (showing last 500 entries for performance)`;
+        } else if (storageMode === 'local' && dataCount >= 1000) {
+            message += ` (showing last 1000 entries)`;
+        }
+        
+        // Show info in console and optionally as a subtle notification
+        console.log(message);
+        
+        // Add data info to dashboard
+        const dataInfoElement = document.getElementById('dataInfo');
+        if (dataInfoElement) {
+            dataInfoElement.innerHTML = `
+                <div class="data-info">
+                    <span class="info-icon">📊</span>
+                    <span class="info-text">${message}</span>
+                </div>
+            `;
+        }
+    }
 }
 
 // Export for global access
@@ -1483,4 +1672,16 @@ function getEmotionEmoji(emotion) {
     if (["contempt", "contemptuous"].includes(e)) return "😒";
     if (["contemptuous", "contempt"].includes(e)) return "😒";
     return "❓";
+}
+
+// Prevent duplicate dashboard success messages
+if (window.dashboard && window.dashboard.showSuccess) {
+    window.dashboard.showSuccess = (function(orig) {
+        let lastMsg = '';
+        return function(msg) {
+            if (msg === lastMsg) return; // suppress duplicate
+            lastMsg = msg;
+            orig.call(this, msg);
+        };
+    })(window.dashboard.showSuccess);
 }

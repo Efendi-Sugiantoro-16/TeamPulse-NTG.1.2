@@ -6,8 +6,8 @@
 class CameraManager {
     constructor(config = {}) {
         this.config = {
-            faceDetectionInterval: 200,
-            confidenceThreshold: 0.6,
+            faceDetectionInterval: 150,
+            confidenceThreshold: 0.7,
             ...config
         };
         
@@ -19,6 +19,8 @@ class CameraManager {
         // Face detection state
         this.faceApiLoaded = false;
         this.lastDetection = null;
+        this.detectionCount = 0;
+        this.lastDetectionTime = 0;
         
         console.log('CameraManager: Initialized');
     }
@@ -46,11 +48,9 @@ class CameraManager {
                 } catch (err) {
                     console.warn('CameraManager: video.play() failed:', err);
                 }
-                // Sinkronisasi canvas setelah video.play()
                 this.syncCanvasToVideo();
-                video.addEventListener('loadedmetadata', () => {
-                    this.syncCanvasToVideo();
-                });
+                video.addEventListener('loadedmetadata', () => this.syncCanvasToVideo());
+                video.addEventListener('resize', () => this.syncCanvasToVideo());
             }
             
             // Initialize face detection
@@ -76,12 +76,15 @@ class CameraManager {
         const video = document.getElementById('cameraVideo');
         const canvas = document.getElementById('cameraCanvas');
         if (video && canvas) {
-            // Set attribute (pixel size)
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            // Set style (display size)
-            canvas.style.width = video.style.width = video.videoWidth + 'px';
-            canvas.style.height = video.style.height = video.videoHeight + 'px';
+            const w = video.videoWidth || 640;
+            const h = video.videoHeight || 480;
+            canvas.width = w;
+            canvas.height = h;
+            video.width = w;
+            video.height = h;
+            // Style for responsive display
+            canvas.style.width = video.style.width = '100%';
+            canvas.style.height = video.style.height = '100%';
         }
     }
 
@@ -108,6 +111,8 @@ class CameraManager {
         if (canvas) {
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Pastikan canvas sinkron dengan video
+            this.syncCanvasToVideo();
         }
         
         this.isActive = false;
@@ -193,50 +198,201 @@ class CameraManager {
         const detectFaces = async () => {
             if (!this.isActive || !this.cameraStream || video.readyState < 2) return;
             
+            // Performance optimization: skip if too frequent
+            const now = Date.now();
+            if (now - this.lastDetectionTime < 50) return; // Max 20 FPS
+            this.lastDetectionTime = now;
+            
             try {
-                const detections = await faceapi.detectAllFaces(
-                    video,
-                    new faceapi.TinyFaceDetectorOptions({ 
-                        inputSize: 224, 
-                        scoreThreshold: 0.5 
-                    })
-                ).withFaceLandmarks().withFaceExpressions();
-                
+                // Sinkronisasi ukuran
+                this.syncCanvasToVideo();
+                // Clear canvas, jangan gambar video ke canvas
                 const ctx = canvas.getContext('2d');
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 
+                // Deteksi wajah dengan parameter yang lebih akurat
+                const detections = await faceapi.detectAllFaces(
+                    video,
+                    new faceapi.TinyFaceDetectorOptions({ 
+                        inputSize: 320,  // Increased for better accuracy
+                        scoreThreshold: this.config.confidenceThreshold  // Use configurable threshold
+                    })
+                ).withFaceLandmarks().withFaceExpressions();
+                
                 if (detections.length > 0) {
-                    const resizedDetections = faceapi.resizeResults(detections, {
-                        width: canvas.width,
-                        height: canvas.height
+                    this.detectionCount++;
+                    
+                    // Enhanced bounding box with gradient and better styling
+                    detections.forEach(det => {
+                        const box = det.detection.box;
+                        
+                        // Skip if detection confidence is too low
+                        if (det.detection.score < this.config.confidenceThreshold) return;
+                        
+                        // Draw bounding box with gradient and shadow
+                        ctx.save();
+                        
+                        // Create gradient for bounding box
+                        const gradient = ctx.createLinearGradient(box.x, box.y, box.x + box.width, box.y + box.height);
+                        gradient.addColorStop(0, 'rgba(0, 255, 127, 0.9)');  // Bright green
+                        gradient.addColorStop(0.5, 'rgba(0, 200, 100, 0.95)'); // Medium green
+                        gradient.addColorStop(1, 'rgba(0, 150, 75, 0.9)');   // Dark green
+                        
+                        ctx.strokeStyle = gradient;
+                        ctx.lineWidth = 3;
+                        ctx.lineCap = 'round';
+                        ctx.lineJoin = 'round';
+                        
+                        // Enhanced shadow
+                        ctx.shadowColor = 'rgba(0, 255, 127, 0.6)';
+                        ctx.shadowBlur = 15;
+                        ctx.shadowOffsetX = 2;
+                        ctx.shadowOffsetY = 2;
+                        
+                        // Draw rounded rectangle
+                        const radius = 8;
+                        ctx.beginPath();
+                        ctx.moveTo(box.x + radius, box.y);
+                        ctx.lineTo(box.x + box.width - radius, box.y);
+                        ctx.quadraticCurveTo(box.x + box.width, box.y, box.x + box.width, box.y + radius);
+                        ctx.lineTo(box.x + box.width, box.y + box.height - radius);
+                        ctx.quadraticCurveTo(box.x + box.width, box.y + box.height, box.x + box.width - radius, box.y + box.height);
+                        ctx.lineTo(box.x + radius, box.y + box.height);
+                        ctx.quadraticCurveTo(box.x, box.y + box.height, box.x, box.y + box.height - radius);
+                        ctx.lineTo(box.x, box.y + radius);
+                        ctx.quadraticCurveTo(box.x, box.y, box.x + radius, box.y);
+                        ctx.closePath();
+                        ctx.stroke();
+                        
+                        // Draw corner indicators
+                        const cornerSize = 12;
+                        ctx.lineWidth = 2;
+                        ctx.shadowBlur = 8;
+                        
+                        // Top-left corner
+                        ctx.beginPath();
+                        ctx.moveTo(box.x, box.y + cornerSize);
+                        ctx.lineTo(box.x, box.y);
+                        ctx.lineTo(box.x + cornerSize, box.y);
+                        ctx.stroke();
+                        
+                        // Top-right corner
+                        ctx.beginPath();
+                        ctx.moveTo(box.x + box.width - cornerSize, box.y);
+                        ctx.lineTo(box.x + box.width, box.y);
+                        ctx.lineTo(box.x + box.width, box.y + cornerSize);
+                        ctx.stroke();
+                        
+                        // Bottom-right corner
+                        ctx.beginPath();
+                        ctx.moveTo(box.x + box.width, box.y + box.height - cornerSize);
+                        ctx.lineTo(box.x + box.width, box.y + box.height);
+                        ctx.lineTo(box.x + box.width - cornerSize, box.y + box.height);
+                        ctx.stroke();
+                        
+                        // Bottom-left corner
+                        ctx.beginPath();
+                        ctx.moveTo(box.x + cornerSize, box.y + box.height);
+                        ctx.lineTo(box.x, box.y + box.height);
+                        ctx.lineTo(box.x, box.y + box.height - cornerSize);
+                        ctx.stroke();
+                        
+                        ctx.restore();
                     });
                     
-                    faceapi.draw.drawDetections(canvas, resizedDetections);
-                    faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+                    // Enhanced landmark drawing with better visibility
+                    detections.forEach(det => {
+                        if (det.landmarks && det.detection.score >= this.config.confidenceThreshold) {
+                            ctx.save();
+                            
+                            const points = det.landmarks.positions;
+                            
+                            // Draw landmark connections with gradient
+                            const landmarkGradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                            landmarkGradient.addColorStop(0, 'rgba(255, 165, 0, 0.8)');  // Orange
+                            landmarkGradient.addColorStop(0.5, 'rgba(255, 140, 0, 0.9)'); // Dark orange
+                            landmarkGradient.addColorStop(1, 'rgba(255, 120, 0, 0.8)');  // Red-orange
+                            
+                            ctx.strokeStyle = landmarkGradient;
+                            ctx.lineWidth = 2;
+                            ctx.lineCap = 'round';
+                            ctx.lineJoin = 'round';
+                            
+                            // Enhanced shadow for landmarks
+                            ctx.shadowColor = 'rgba(255, 165, 0, 0.5)';
+                            ctx.shadowBlur = 8;
+                            ctx.shadowOffsetX = 1;
+                            ctx.shadowOffsetY = 1;
+                            
+                            // Draw landmark connections
+                            ctx.beginPath();
+                            for (let i = 0; i < points.length; i++) {
+                                const pt = points[i];
+                                if (i === 0) ctx.moveTo(pt.x, pt.y);
+                                else ctx.lineTo(pt.x, pt.y);
+                            }
+                            ctx.closePath();
+                            ctx.stroke();
+                            
+                            // Draw individual landmark points with enhanced styling
+                            points.forEach((pt, index) => {
+                                ctx.save();
+                                
+                                // Different sizes for different landmark types
+                                let pointSize = 2;
+                                if (index < 17) pointSize = 3; // Face outline
+                                else if (index < 27) pointSize = 2.5; // Eyebrows
+                                else if (index < 36) pointSize = 2; // Nose
+                                else if (index < 48) pointSize = 2.5; // Eyes
+                                else pointSize = 2; // Mouth
+                                
+                                // Create radial gradient for points
+                                const pointGradient = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, pointSize);
+                                pointGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                                pointGradient.addColorStop(0.5, 'rgba(255, 165, 0, 0.8)');
+                                pointGradient.addColorStop(1, 'rgba(255, 140, 0, 0.6)');
+                                
+                                ctx.fillStyle = pointGradient;
+                                ctx.shadowColor = 'rgba(255, 165, 0, 0.4)';
+                                ctx.shadowBlur = 4;
+                                ctx.shadowOffsetX = 0;
+                                ctx.shadowOffsetY = 0;
+                                
+                                ctx.beginPath();
+                                ctx.arc(pt.x, pt.y, pointSize, 0, 2 * Math.PI);
+                                ctx.fill();
+                                
+                                ctx.restore();
+                            });
+                            
+                            ctx.restore();
+                        }
+                    });
+                    
+                    // Hapus faceapi bawaan untuk menghindari duplikasi landmark
+                    // faceapi.draw.drawDetections(canvas, detections);
+                    // faceapi.draw.drawFaceLandmarks(canvas, detections);
                     
                     const face = detections[0];
                     const expressions = face.expressions;
                     const dominantExpression = Object.entries(expressions).reduce((a, b) => a[1] > b[1] ? a : b);
-                    
                     const emotion = this.mapExpressionToEmotion(dominantExpression[0]);
                     const confidence = dominantExpression[1];
-                    
                     const detectionData = {
                         emotion: emotion,
                         dominantEmotion: emotion,
                         confidence: confidence,
                         expressions: expressions,
                         source: 'camera',
-                        timestamp: new Date().toISOString()
+                        timestamp: new Date().toISOString(),
+                        detectionScore: face.detection.score,
+                        detectionCount: this.detectionCount
                     };
-                    
                     this.lastDetection = detectionData;
                     this.emit('emotionDetected', detectionData);
-                    
                 } else {
                     this.emit('noFaceDetected');
                 }
-                
             } catch (error) {
                 console.error('CameraManager: Face detection error:', error);
                 this.emit('detectionError', error);

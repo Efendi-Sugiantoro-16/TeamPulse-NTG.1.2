@@ -73,11 +73,15 @@
 
         <!-- Period Selector -->
         <div class="period-selector">
-            <button class="period-btn active" data-period="day">Hari Ini</button>
+            <button class="period-btn active" data-period="all">Semua Data</button>
+            <button class="period-btn" data-period="day">Hari Ini</button>
             <button class="period-btn" data-period="week">Minggu Ini</button>
             <button class="period-btn" data-period="month">Bulan Ini</button>
             <button class="period-btn" data-period="year">Tahun Ini</button>
         </div>
+
+        <!-- Data Info -->
+        <div id="dataInfo" class="data-info-container"></div>
 
         <!-- Main Dashboard Content -->
         <div class="dashboard-content">
@@ -282,7 +286,7 @@
                 </div>
             </div>
 
-            <!-- Storage Status -->
+            <!-- Storage Status Panel: Sekarang di bawah data-section, full width -->
             <div class="storage-status">
                 <h3><i class="fas fa-database"></i> Status Penyimpanan</h3>
                 <div class="status-grid" id="storageStatus">
@@ -331,6 +335,7 @@
     <!-- Scripts -->
     <script src="js/dataStorage.js"></script>
     <script src="js/hybridStorage.js"></script>
+    <script src="js/hybridStorageInit.js"></script>
     <script src="js/components/DataManager.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/dataImport.js"></script>
@@ -523,26 +528,35 @@
 
     // Event listener untuk perubahan mode penyimpanan
     window.addEventListener('storageModeChanged', function(e) {
+        console.log('🔄 Storage mode changed event received:', e.detail);
         if (window.dashboard && typeof window.dashboard.refreshData === 'function') {
+            console.log('🔄 Refreshing dashboard due to storage mode change...');
             window.dashboard.refreshData();
         } else {
+            console.log('🔄 Reloading page due to storage mode change...');
             location.reload();
         }
     });
 
-    async function startDashboardApp() {
-        if (!window.hybridStorage && typeof HybridStorage !== 'undefined') {
-            window.hybridStorage = new HybridStorage();
-            if (typeof window.hybridStorage.init === 'function') {
-                await window.hybridStorage.init();
-            }
-        } else if (window.hybridStorage && typeof window.hybridStorage.init === 'function') {
-            await window.hybridStorage.init();
-        }
-        // Pastikan dashboard hanya dibuat setelah storage siap
+    // Initialize dashboard when hybrid storage is ready
+    document.addEventListener('hybridStorageReady', function(event) {
+        console.log('Hybrid Storage ready, initializing dashboard...');
         window.dashboard = new Dashboard();
-    }
-    startDashboardApp();
+    });
+    
+    // Fallback if hybrid storage fails
+    document.addEventListener('DOMContentLoaded', function() {
+        // Wait a bit for hybrid storage to initialize
+        setTimeout(() => {
+            if (!window.dashboard && window.hybridStorageInitializer && window.hybridStorageInitializer.isReady()) {
+                console.log('Initializing dashboard with ready hybrid storage...');
+                window.dashboard = new Dashboard();
+            } else if (!window.dashboard) {
+                console.warn('Hybrid Storage not ready, initializing dashboard with fallback...');
+                window.dashboard = new Dashboard();
+            }
+        }, 1000);
+    });
     </script>
 </body>
 </html>

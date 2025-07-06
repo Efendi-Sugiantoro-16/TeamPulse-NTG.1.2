@@ -69,17 +69,26 @@ exports.createEmotion = async (req, res) => {
   }
 };
 
-// Get All Emotions (bisa difilter user_id, source, date range)
+// Get All Emotions (bisa difilter user_id, source, date range) - NO LIMITS
 exports.getEmotions = async (req, res) => {
   try {
     const { 
       user_id, 
       source, 
       start_date, 
-      end_date, 
-      limit = 100,
-      offset = 0 
+      end_date,
+      limit,
+      offset
     } = req.query;
+
+    console.log('🔍 API Request received with params:', {
+      user_id,
+      source,
+      start_date,
+      end_date,
+      limit,
+      offset
+    });
 
     const whereClause = {};
     
@@ -92,21 +101,20 @@ exports.getEmotions = async (req, res) => {
       if (end_date) whereClause.createdAt[Op.lte] = new Date(end_date);
     }
 
-    // Perbaiki limit: jika limit=-1 atau tidak ada, tampilkan semua data
-    let queryLimit = undefined;
-    if (typeof limit !== 'undefined' && limit !== null && limit !== '' && Number(limit) !== -1) {
-      queryLimit = parseInt(limit);
-      if (isNaN(queryLimit) || queryLimit <= 0) queryLimit = 100;
-    }
+    console.log('🔍 Where clause:', whereClause);
 
+    // NO LIMITS - Get all data from database
+    console.log('🗄️ Executing database query WITHOUT any limits...');
+    
     const emotions = await Emotion.findAll({
       where: whereClause,
-      order: [['createdAt', 'DESC']],
-      ...(queryLimit ? { limit: queryLimit } : {}),
-      offset: parseInt(offset) || 0
+      order: [['createdAt', 'DESC']]
+      // NO LIMIT, NO OFFSET - Get ALL data
     });
 
-    console.log(`✅ Retrieved ${emotions.length} emotions from database`);
+    console.log(`✅ Retrieved ${emotions.length} emotions from database (NO LIMITS - all data)`);
+    console.log('📋 Sample data (first 3):', emotions.slice(0, 3).map(e => ({ id: e.id, emotion: e.emotion, createdAt: e.createdAt })));
+    console.log('📋 Sample data (last 3):', emotions.slice(-3).map(e => ({ id: e.id, emotion: e.emotion, createdAt: e.createdAt })));
 
     res.json({
       success: true,

@@ -1,0 +1,181 @@
+digraph TeamPulseWorkflow {
+    // Graph settings
+    rankdir=TB;
+    node [shape=box, style=filled, fontname="Arial", fontsize=10];
+    edge [fontname="Arial", fontsize=9];
+    
+    // Color scheme
+    subgraph cluster_0 {
+        label="User Authentication & Session Management";
+        style=filled;
+        color=lightblue;
+        
+        start [label="User Access\nApplication", shape=oval, fillcolor=lightgreen];
+        login [label="Login Page\n(/login.html)", fillcolor=yellow];
+        register [label="Register Page\n(/signup.html)", fillcolor=yellow];
+        auth_check [label="JWT Authentication\nValidation", fillcolor=orange];
+        dashboard_main [label="Main Dashboard\n(/dashboard.html)", fillcolor=lightcyan];
+    }
+    
+    subgraph cluster_1 {
+        label="Emotion Input Methods";
+        style=filled;
+        color=lightyellow;
+        
+        emotion_input [label="Emotion Input Page\n(/emotion-input.html)", fillcolor=lightcyan];
+        camera_tab [label="Camera Analysis Tab", fillcolor=pink];
+        audio_tab [label="Voice Analysis Tab", fillcolor=pink];
+        text_tab [label="Text Analysis Tab", fillcolor=pink];
+        snapshot_tab [label="Snapshot Analysis Tab", fillcolor=pink];
+    }
+    
+    subgraph cluster_2 {
+        label="AI Analysis Engine";
+        style=filled;
+        color=lightgreen;
+        
+        face_api [label="Face API Manager\n(faceApiManager.js)", fillcolor=lightgreen];
+        audio_analyzer [label="Audio Emotion Analyzer\n(aiEmotionAnalyzer.js)", fillcolor=lightgreen];
+        text_analyzer [label="Text Emotion Analyzer\n(TextAnalyzer.js)", fillcolor=lightgreen];
+        tensorflow_init [label="TensorFlow.js\nInitialization", fillcolor=lightgreen];
+    }
+    
+    subgraph cluster_3 {
+        label="Data Storage & Management";
+        style=filled;
+        color=lightcoral;
+        
+        hybrid_storage [label="Hybrid Storage System\n(hybridStorage.js)", fillcolor=lightcoral];
+        database_storage [label="MySQL Database\n(Sequelize ORM)", fillcolor=orange];
+        local_storage [label="LocalStorage\n(Offline Mode)", fillcolor=orange];
+        data_validation [label="Data Validation\n& Processing", fillcolor=yellow];
+    }
+    
+    subgraph cluster_4 {
+        label="Dashboard & Analytics";
+        style=filled;
+        color=lightsteelblue;
+        
+        dashboard_update [label="Dashboard Update\n(dashboard.js)", fillcolor=lightsteelblue];
+        charts [label="Chart Generation\n(Chart.js)", fillcolor=lightsteelblue];
+        statistics [label="Statistics Calculation", fillcolor=lightsteelblue];
+        real_time_update [label="Real-time Updates\n(BroadcastChannel)", fillcolor=lightsteelblue];
+    }
+    
+    subgraph cluster_5 {
+        label="Backend API Services";
+        style=filled;
+        color=lightpink;
+        
+        express_server [label="Express.js Server\n(app.js)", fillcolor=lightpink];
+        auth_routes [label="Authentication Routes\n(/api/auth)", fillcolor=lightpink];
+        emotion_routes [label="Emotion Routes\n(/api/emotions)", fillcolor=lightpink];
+        database_routes [label="Database Routes\n(/api/database)", fillcolor=lightpink];
+    }
+    
+    // User flow connections
+    start -> login [label="Access"];
+    start -> register [label="New User"];
+    login -> auth_check [label="Credentials"];
+    register -> auth_check [label="Registration"];
+    auth_check -> dashboard_main [label="Valid Token"];
+    
+    // Navigation to emotion input
+    dashboard_main -> emotion_input [label="Add Emotion"];
+    
+    // Emotion input tabs
+    emotion_input -> camera_tab [label="Camera Tab"];
+    emotion_input -> audio_tab [label="Audio Tab"];
+    emotion_input -> text_tab [label="Text Tab"];
+    emotion_input -> snapshot_tab [label="Snapshot Tab"];
+    
+    // AI Analysis connections
+    camera_tab -> face_api [label="Start Camera"];
+    audio_tab -> audio_analyzer [label="Start Audio"];
+    text_tab -> text_analyzer [label="Analyze Text"];
+    snapshot_tab -> face_api [label="Process Image"];
+    
+    // TensorFlow initialization
+    face_api -> tensorflow_init [label="Initialize"];
+    audio_analyzer -> tensorflow_init [label="Initialize"];
+    
+    // Data storage flow
+    face_api -> data_validation [label="Emotion Data"];
+    audio_analyzer -> data_validation [label="Emotion Data"];
+    text_analyzer -> data_validation [label="Emotion Data"];
+    
+    data_validation -> hybrid_storage [label="Validated Data"];
+    hybrid_storage -> database_storage [label="Online Mode"];
+    hybrid_storage -> local_storage [label="Offline Mode"];
+    
+    // Backend API connections
+    hybrid_storage -> express_server [label="API Calls"];
+    express_server -> auth_routes [label="Auth Requests"];
+    express_server -> emotion_routes [label="Emotion Requests"];
+    express_server -> database_routes [label="DB Requests"];
+    
+    // Dashboard updates
+    hybrid_storage -> real_time_update [label="Data Saved"];
+    real_time_update -> dashboard_update [label="Broadcast"];
+    dashboard_update -> charts [label="Update Charts"];
+    dashboard_update -> statistics [label="Update Stats"];
+    
+    // Return to dashboard
+    emotion_input -> dashboard_main [label="Back to Dashboard"];
+    
+    // Error handling and fallbacks
+    database_storage -> local_storage [label="Fallback\n(Connection Failed)"];
+    local_storage -> database_storage [label="Sync\n(When Online)"];
+    
+    // Additional system components
+    subgraph cluster_6 {
+        label="System Utilities";
+        style=filled;
+        color=lightgray;
+        
+        config [label="Configuration\n(config.js)", fillcolor=lightgray];
+        middleware [label="Middleware\n(auth.js)", fillcolor=lightgray];
+        models [label="Data Models\n(emotion.js, user.js)", fillcolor=lightgray];
+    }
+    
+    express_server -> config [label="Load Config"];
+    express_server -> middleware [label="Use Middleware"];
+    express_server -> models [label="Database Models"];
+    
+    // Styling for different types of nodes
+    start [shape=oval, fillcolor=lightgreen];
+    login [shape=box, fillcolor=yellow];
+    register [shape=box, fillcolor=yellow];
+    auth_check [shape=diamond, fillcolor=orange];
+    dashboard_main [shape=box, fillcolor=lightcyan];
+    emotion_input [shape=box, fillcolor=lightcyan];
+    
+    // AI components
+    face_api [shape=box, fillcolor=lightgreen];
+    audio_analyzer [shape=box, fillcolor=lightgreen];
+    text_analyzer [shape=box, fillcolor=lightgreen];
+    tensorflow_init [shape=box, fillcolor=lightgreen];
+    
+    // Storage components
+    hybrid_storage [shape=box, fillcolor=lightcoral];
+    database_storage [shape=cylinder, fillcolor=orange];
+    local_storage [shape=cylinder, fillcolor=orange];
+    data_validation [shape=diamond, fillcolor=yellow];
+    
+    // Dashboard components
+    dashboard_update [shape=box, fillcolor=lightsteelblue];
+    charts [shape=box, fillcolor=lightsteelblue];
+    statistics [shape=box, fillcolor=lightsteelblue];
+    real_time_update [shape=box, fillcolor=lightsteelblue];
+    
+    // Backend components
+    express_server [shape=box, fillcolor=lightpink];
+    auth_routes [shape=box, fillcolor=lightpink];
+    emotion_routes [shape=box, fillcolor=lightpink];
+    database_routes [shape=box, fillcolor=lightpink];
+    
+    // Utility components
+    config [shape=box, fillcolor=lightgray];
+    middleware [shape=box, fillcolor=lightgray];
+    models [shape=box, fillcolor=lightgray];
+} 

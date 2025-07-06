@@ -83,6 +83,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             await window.hybridStorage.init();
         }
         
+        // === AUTO-SELECT STORAGE MODE ===
+        const storageModeSelect = document.getElementById('storageModeSelect');
+        if (storageModeSelect && window.hybridStorage) {
+            // Check backend availability
+            const dbAvailable = window.hybridStorage.dbAvailable;
+            if (dbAvailable) {
+                storageModeSelect.value = 'database';
+                // Enable both options
+                storageModeSelect.querySelector('option[value="database"]').disabled = false;
+                storageModeSelect.querySelector('option[value="local"]').disabled = false;
+            } else {
+                storageModeSelect.value = 'local';
+                // Disable database option if not available
+                storageModeSelect.querySelector('option[value="database"]').disabled = true;
+                storageModeSelect.querySelector('option[value="local"]').disabled = false;
+            }
+            // Update UI status to match
+            if (window.uiManager && window.uiManager.updateStorageModeStatus) {
+                window.uiManager.updateStorageModeStatus(storageModeSelect.value);
+            }
+        }
+        
         console.log('=== Emotion Input System Initialized Successfully ===');
         // Show success notification
         showNotification('Emotion Input System berhasil diinisialisasi!', 'success');
