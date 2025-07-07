@@ -482,5 +482,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
   <p>Made with ❤️ by TeamPulse Development Team</p>
-  <p>© 2025 TeamPulse By JombloKurangTuru.com. All rights reserved.</p>
+  <p>© 2025 TeamPulse By Efendi & JombloKurangTuru.com. All rights reserved.</p>
 </div>
